@@ -1,2 +1,2 @@
 # ftl-robot-gateway
-FTL Robot Interface
+A server based interface for communicating with robot hardware
