@@ -1,5 +1,5 @@
 /**
- * Gateway
+ * Ansible
  * 
  * This module handles all communication between a FTL gateway client and the actual robot.
  * It will spin up a UDP server and pass all connections 
@@ -13,7 +13,7 @@ const Connection = require('./connection');
 
 const DEFAULT_PORT = 41234;
 
-class Gateway extends EventEmitter {
+class Ansible extends EventEmitter {
     constructor(opts) {
         super();
 
@@ -27,18 +27,18 @@ class Gateway extends EventEmitter {
         const server = dgram.createSocket('udp4');
         
         server.on('error', (err) => {
-            logger.error(`[FTL-GWY] UDP Server Error:\n${err.stack}`);
+            logger.error(`[FTL-ANS] UDP Server Error:\n${err.stack}`);
             server.close();
         });
 
         server.on('message', (msg, rinfo) => {
-            logger.info(`[FTL-GWY] UDP Server Message: ${msg} from ${rinfo.address}:${rinfo.port}`);
+            logger.info(`[FTL-ANS] UDP Server Message: ${msg} from ${rinfo.address}:${rinfo.port}`);
             this._onMessageReceived(msg, rinfo);
         });
 
         server.on('listening', () => {
             const address = server.address();
-            logger.info(`[FTL-GWY] UDP Server Listening ${address.address}:${address.port}`);
+            logger.info(`[FTL-ANS] UDP Server Listening ${address.address}:${address.port}`);
         });
 
         server.bind(opts.port || DEFAULT_PORT);
@@ -52,7 +52,7 @@ class Gateway extends EventEmitter {
 
         const clientAddr = rinfo.address + ':' + rinfo.port;
         if (!this.d_clientConnections[clientAddr]) {
-            logger.info(`[FTL-GWY] Adding client connection (${clientAddr})`);
+            logger.info(`[FTL-ANS] Adding client connection (${clientAddr})`);
             this.d_clientConnections[clientAddr] = new Connection(this.d_server, rinfo);
         }
 
@@ -61,4 +61,4 @@ class Gateway extends EventEmitter {
     /** Public API **/
 };
 
-module.exports = Gateway;
+module.exports = Ansible;

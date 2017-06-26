@@ -1,5 +1,5 @@
 {
-  "name": "ftl-robot-gateway",
+  "name": "ftl-ansible",
   "version": "1.0.0",
   "description": "Server based interface for communicating with robot hardware",
   "main": "index.js",
@@ -8,12 +8,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zhiquanyeo/ftl-robot-gateway.git"
+    "url": "git+https://github.com/zhiquanyeo/ftl-ansible.git"
   },
   "author": "ZQ Yeo",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/zhiquanyeo/ftl-robot-gateway/issues"
+    "url": "https://github.com/zhiquanyeo/ftl-ansible/issues"
   },
-  "homepage": "https://github.com/zhiquanyeo/ftl-robot-gateway#readme"
+  "homepage": "https://github.com/zhiquanyeo/ftl-ansible#readme"
 }

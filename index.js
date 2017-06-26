@@ -5,7 +5,7 @@
  */
 const logger = require('winston');
 
-const Gateway = require('./gateway/gateway');
+const Gateway = require('./ansible/ansible');
 
-logger.info('Initializing FTL Gateway');
+logger.info('Initializing FTL Ansible');
 var gateway = new Gateway();
