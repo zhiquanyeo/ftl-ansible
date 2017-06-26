@@ -1,2 +1,2 @@
-# ftl-robot-gateway
+# ftl-ansible
 A server based interface for communicating with robot hardware
