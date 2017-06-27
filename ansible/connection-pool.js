@@ -18,7 +18,7 @@ function generateClientAddr(rinfo) {
     return rinfo.address + ':' + rinfo.port;
 }
 
-class ConnectionPool {
+class ConnectionPool extends EventEmitter {
     constructor(socket) {
         super();
 
