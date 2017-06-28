@@ -11,7 +11,9 @@ const PacketTemplates = {
             DLEN:   5,
             DATA:   6,
             CHK:    6
-        }
+        },
+        dLenBytes:  1,
+        packetStartByte: 2
     },
     ServerResponse: {
         minPacketSize: 6,
@@ -24,7 +26,9 @@ const PacketTemplates = {
             DLEN:   4,
             DATA:   5,
             CHK:    5
-        }
+        },
+        dLenBytes:  1,
+        packetStartByte: 2
     },
     ServerAsync: {
         minPacketSize: 6,
@@ -36,7 +40,9 @@ const PacketTemplates = {
             DLEN:       3, // 2 bytes
             DATA:       5,
             CHK:        5
-        }
+        },
+        dLenBytes:  2,
+        packetStartByte: 2
     }
 };
 
