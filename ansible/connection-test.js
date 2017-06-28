@@ -62,7 +62,7 @@ describe('Connection', () => {
                 }
             });
 
-            conn.processMessage({DID: 0, CID: 1});
+            conn.processMessage({DID: 0, CID: 1, SEQ: 1});
         });
 
         expect(p).to.be.fulfilled.notify(done);
@@ -83,7 +83,7 @@ describe('Connection', () => {
                resolve();
             });
 
-            conn.processMessage({DID: 0, CID: 2});
+            conn.processMessage({DID: 0, CID: 2, SEQ: 1});
         });
 
         expect(p).to.be.fulfilled.notify(done);
@@ -98,7 +98,7 @@ describe('Connection', () => {
                 if (stateInfo.from === 'pre-connect' && 
                     stateInfo.to === 'connected') {
                     // Send the CONTROL_REQ message
-                    conn.processMessage({DID: 0, CID: 2});
+                    conn.processMessage({DID: 0, CID: 2, SEQ: 1});
                 }
                 else if (stateInfo.from === 'connected' &&
                     stateInfo.to === 'active') {
@@ -113,7 +113,7 @@ describe('Connection', () => {
                }
             });
 
-            conn.processMessage({DID: 0, CID: 1});
+            conn.processMessage({DID: 0, CID: 1, SEQ: 1});
         });
 
         expect(p).to.be.fulfilled.notify(done);
@@ -143,7 +143,29 @@ describe('Connection', () => {
                }
             });
 
-            conn.processMessage({DID: 0, CID: 1});
+            conn.processMessage({DID: 0, CID: 1, SEQ: 1});
+        });
+
+        expect(p).to.be.fulfilled.notify(done);
+    });
+
+    it('sends connection ack', (done) => {
+        var p = new Promise((resolve, reject) => {
+            var conn = new Connection({}, false, 1000);
+
+            var doNotReject = false;
+            conn.on('sendResponse', (resp) => {
+                doNotReject = true;
+                resolve();
+            })
+
+            conn.on('timedOut', () => {
+               if (!doNotReject) {
+                   reject();
+               }
+            });
+
+            conn.processMessage({DID: 0, CID: 1, SEQ: 1});
         });
 
         expect(p).to.be.fulfilled.notify(done);

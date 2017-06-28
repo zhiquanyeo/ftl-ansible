@@ -33,7 +33,15 @@ class Connection extends EventEmitter {
             states: {
                 'pre-connect': {
                     // Handlers
-                    'SYS:CONN': 'connected',
+                    'SYS:CONN': function (packet) {
+                        // Set up the response
+                        var resp = {
+                            MSRP: 0, // OK
+                            SEQ: packet.SEQ || 0,
+                        };
+                        this.emit('sendResponse', resp);
+                        this.transition('connected');
+                    }
                 },
                 'connected': {
                     'SYS:CONTROL_REQ': function () {
@@ -64,8 +72,8 @@ class Connection extends EventEmitter {
                 }
             },
 
-            processCommand: function(cmd) {
-                this.handle(cmd);
+            processCommand: function(cmd, packet) {
+                this.handle(cmd, packet);
             }
         });
         
@@ -74,6 +82,10 @@ class Connection extends EventEmitter {
                 from: data.fromState,
                 to: data.toState
             });
+        });
+
+        this.d_fsm.on('sendResponse', (resp) => {
+            this.emit('sendResponse', resp);
         });
 
         this.active = !!active;
@@ -91,7 +103,7 @@ class Connection extends EventEmitter {
     processMessage(packet) {
         var command = ProtocolCommands.getCommandType(packet.DID, packet.CID);
         if (!command) command = '';
-        this.d_fsm.processCommand(command);
+        this.d_fsm.processCommand(command, packet);
 
         if (this.d_useHeartbeat) {
             clearTimeout(this.d_hbeatTimer);

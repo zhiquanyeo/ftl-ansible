@@ -55,6 +55,25 @@ class ConnectionPool extends EventEmitter {
             clientAddr: clientAddr,
             connection: connection
         });
+
+        connection.on('timedOut', 
+                this._handleConnectionTimeout.bind(this, connection));
+        connection.on('stateChanged', 
+                this._handleConnectionStateChanged.bind(this, connection));
+        connection.on('sendResponse', 
+                this._handleConnectionResponse.bind(this, connection));
+    }
+
+    _handleConnectionTimeout(connection) {
+
+    }
+
+    _handleConnectionStateChanged(connection, stateInfo) {
+
+    }
+
+    _handleConnectionResponse(connection, originalRequest, response) {
+        
     }
 
     /** Public API */
