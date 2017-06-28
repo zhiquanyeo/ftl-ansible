@@ -1,28 +1,105 @@
-const logger = require('winston');
-
+const machina = require('machina');
 const EventEmitter = require('events');
-
-const ConnectionStates = {
-    PRE_CONNECT: 0,
-    CONNECTED: 1,
-    ACTIVE: 2,
-    QUEUED: 3,
-};
+const ProtocolCommands = require('./protocol-commands');
 
 class Connection extends EventEmitter {
-    constructor(rinfo) {
+    constructor(rinfo, active, hbeatTimeout) {
         super();
 
         this.d_rinfo = rinfo;
-        this.d_state = ConnectionStates.PRE_CONNECT;
-        this.d_creationTime = Date.now();
-        this.d_lastActive = Date.now();
+        this.d_active = false;
+        this.d_useHeartbeat = false;
+        
+        if (hbeatTimeout === undefined) {
+            hbeatTimeout = 5000;
+        }
+
+        this.d_hbeatTimeout = hbeatTimeout;
+
+        if (hbeatTimeout !== -1) {
+            this.d_useHeartbeat = true;
+            this.d_hbeatTimer = setTimeout(() => {
+                this.emit('timedOut');
+            }, this.d_hbeatTimeout);
+        }
+
+        this.d_fsm = new machina.Fsm({
+            initialization: function (options) {
+
+            },
+
+            namespace: 'ansible-connection',
+            initialState: 'pre-connect',
+            states: {
+                'pre-connect': {
+                    // Handlers
+                    'SYS:CONN': 'connected',
+                },
+                'connected': {
+                    'SYS:CONTROL_REQ': function () {
+                        if (this.d_connActive) {
+                            this.transition('active');
+                        }
+                        else {
+                            this.transition('queued');
+                        }
+                    },
+                },
+                'active': {
+                    'queued': 'queued',
+                },
+                'queued': {
+                    'active': 'active',
+                }
+            },
+
+            // Public API
+            setConnActive: function (val) {
+                this.d_connActive = !!val;
+                if (this.d_connActive) {
+                    this.handle('active');
+                }
+                else {
+                    this.handle('queued');
+                }
+            },
+
+            processCommand: function(cmd) {
+                this.handle(cmd);
+            }
+        });
+        
+        this.d_fsm.on('transition', (data) => {
+            this.emit('stateChanged', {
+                from: data.fromState,
+                to: data.toState
+            });
+        });
+
+        this.active = !!active;
     }
 
-    /** Public API */
-    processMessage(msg) {
-
+    set active(val) {
+        this.d_active = !!val;
+        this.d_fsm.setConnActive(this.d_active);
     }
-};
+
+    get state() {
+        return this.d_fsm.state;
+    }
+
+    processMessage(packet) {
+        var command = ProtocolCommands.getCommandType(packet.DID, packet.CID);
+        if (!command) command = '';
+        this.d_fsm.processCommand(command);
+
+        if (this.d_useHeartbeat) {
+            clearTimeout(this.d_hbeatTimer);
+            this.d_hbeatTimer = setTimeout(() => {
+                this.emit('timedOut');
+            }, this.d_hbeatTimeout);
+        }
+    }
+}
 
 module.exports = Connection;
