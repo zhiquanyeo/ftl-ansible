@@ -22,6 +22,8 @@
     "chai-bytes": "^0.1.1"
   },
   "dependencies": {
+    "machina": "^2.0.0",
+    "promise": "^8.0.0",
     "winston": "^2.3.1"
   }
 }
