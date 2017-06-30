@@ -34,7 +34,7 @@ describe('PacketBuilder', () => {
 
     it('builds simple server response packet', () => {
         var packet = {
-            MSRP: 0,
+            MRSP: 0,
             SEQ: 1,
         };
 
@@ -46,7 +46,7 @@ describe('PacketBuilder', () => {
 
     it('builds complex server response packet', () => {
         var packet = {
-            MSRP: 1,
+            MRSP: 1,
             SEQ: 5,
             DATA: new Buffer([0x01, 0x02, 0x03, 0x04])
         };

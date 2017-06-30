@@ -87,7 +87,7 @@ describe('PacketParser', () => {
     it('decodes simple server response packet', () => {
         var inboundBuf = new Buffer([0xFF, 0xFF, 0x00, 0x01, 0x01, 0xFD]);
         var expectedPacket = {
-            MSRP: 0,
+            MRSP: 0,
             SEQ: 1,
             DATA: new Buffer(0)
         };
@@ -95,7 +95,7 @@ describe('PacketParser', () => {
         var testPacketInfo = PacketParser.decodeServerResponsePacket(inboundBuf);
         expect(testPacketInfo.ok).to.equal(true);
         var testPacket = testPacketInfo.packet;
-        expect(testPacket.MSRP).to.equal(expectedPacket.MSRP);
+        expect(testPacket.MRSP).to.equal(expectedPacket.MRSP);
         expect(testPacket.SEQ).to.equal(expectedPacket.SEQ);
         expect(testPacket.DATA).to.equalBytes(expectedPacket.DATA);
     });
@@ -103,7 +103,7 @@ describe('PacketParser', () => {
     it('decodes complex server response packet', () => {
         var inboundBuf = new Buffer([0xFF, 0xFF, 0x00, 0x04, 0x05, 0x01, 0x02, 0x03, 0x04, 0xec]);
         var expectedPacket = {
-            MSRP: 0,
+            MRSP: 0,
             SEQ: 4,
             DATA: new Buffer([0x01, 0x02, 0x03, 0x04])
         };
@@ -111,7 +111,7 @@ describe('PacketParser', () => {
         var testPacketInfo = PacketParser.decodeServerResponsePacket(inboundBuf);
         expect(testPacketInfo.ok).to.equal(true);
         var testPacket = testPacketInfo.packet;
-        expect(testPacket.MSRP).to.equal(expectedPacket.MSRP);
+        expect(testPacket.MRSP).to.equal(expectedPacket.MRSP);
         expect(testPacket.SEQ).to.equal(expectedPacket.SEQ);
         expect(testPacket.DATA).to.equalBytes(expectedPacket.DATA);
     });
@@ -119,7 +119,7 @@ describe('PacketParser', () => {
     it('correctly rejects incorrect checksum in server response packet', () => {
         var inboundBuf = new Buffer([0xFF, 0xFF, 0x00, 0x04, 0x05, 0x01, 0x02, 0x03, 0x04, 0xAA]);
         var expectedPacket = {
-            MSRP: 0,
+            MRSP: 0,
             SEQ: 4,
             DATA: new Buffer([0x01, 0x02, 0x03, 0x04])
         };
@@ -133,7 +133,7 @@ describe('PacketParser', () => {
     it('correctly rejects incorrect length packet in server response packet', () => {
         var inboundBuf = new Buffer([0xFF, 0xFF, 0x00, 0x04, 0x02, 0x01, 0x02, 0x03, 0x04, 0xAA]);
         var expectedPacket = {
-            MSRP: 0,
+            MRSP: 0,
             SEQ: 4,
             DATA: new Buffer([0x01, 0x02, 0x03, 0x04])
         };

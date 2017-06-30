@@ -36,7 +36,7 @@ class Connection extends EventEmitter {
                     'SYS:CONN': function (packet) {
                         // Set up the response
                         var resp = {
-                            MSRP: 0, // OK
+                            MRSP: 0, // OK
                             SEQ: packet.SEQ || 0,
                         };
                         this.emit('sendResponse', resp);

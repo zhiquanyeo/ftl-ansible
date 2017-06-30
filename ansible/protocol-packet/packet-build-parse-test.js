@@ -53,7 +53,7 @@ describe('Packet Build and Parse Tests', () => {
 
     it('correctly builds and parses a simple server response packet', () => {
         var expectedPacket = {
-            MSRP: 0,
+            MRSP: 0,
             SEQ: 1,
             DATA: new Buffer(0)
         };
@@ -62,14 +62,14 @@ describe('Packet Build and Parse Tests', () => {
                 PacketBuilder.buildServerResponsePacket(expectedPacket));
         expect(testPacketInfo.ok).to.equal(true);
         var testPacket = testPacketInfo.packet;
-        expect(testPacket.MSRP).to.equal(expectedPacket.MSRP);
+        expect(testPacket.MRSP).to.equal(expectedPacket.MRSP);
         expect(testPacket.SEQ).to.equal(expectedPacket.SEQ);
         expect(testPacket.DATA).to.equalBytes(expectedPacket.DATA);
     });
 
     it('correctly builds and parses a complex server response packet', () => {
         var expectedPacket = {
-            MSRP: 0,
+            MRSP: 0,
             SEQ: 4,
             DATA: new Buffer([0x01, 0x02, 0x03, 0x04])
         };
@@ -78,7 +78,7 @@ describe('Packet Build and Parse Tests', () => {
                 PacketBuilder.buildServerResponsePacket(expectedPacket));
         expect(testPacketInfo.ok).to.equal(true);
         var testPacket = testPacketInfo.packet;
-        expect(testPacket.MSRP).to.equal(expectedPacket.MSRP);
+        expect(testPacket.MRSP).to.equal(expectedPacket.MRSP);
         expect(testPacket.SEQ).to.equal(expectedPacket.SEQ);
         expect(testPacket.DATA).to.equalBytes(expectedPacket.DATA);
     });

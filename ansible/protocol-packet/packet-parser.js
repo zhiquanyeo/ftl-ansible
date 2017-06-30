@@ -96,7 +96,7 @@ function decodeServerResponsePacket(buffer) {
     var ret = {
         ok: false,
         packet: {
-            MSRP: 0,
+            MRSP: 0,
             SEQ: 0,
             DATA: null,
         },
@@ -111,7 +111,7 @@ function decodeServerResponsePacket(buffer) {
     var dLen = buffer.readUInt8(template.DLEN);
 
     ret.ok = true;
-    ret.packet.MSRP = buffer.readUInt8(template.MSRP);
+    ret.packet.MRSP = buffer.readUInt8(template.MRSP);
     ret.packet.SEQ = buffer.readUInt8(template.SEQ);
     ret.packet.DATA = buffer.slice(template.DATA, template.DATA + dLen - 1);
 

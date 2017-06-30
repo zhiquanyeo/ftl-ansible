@@ -21,7 +21,7 @@ const PacketTemplates = {
         template: {
             SOP1:   0,
             SOP2:   1,
-            MSRP:   2,
+            MRSP:   2,
             SEQ:    3,
             DLEN:   4,
             DATA:   5,
