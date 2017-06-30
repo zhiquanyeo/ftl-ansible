@@ -1,8 +1,6 @@
 /**
- * Ansible
+ * AnsibleServer
  * 
- * This module handles all communication between a FTL gateway client and the actual robot.
- * It will spin up a UDP server and pass all connections 
  */
 
 const logger = require('winston');
@@ -11,15 +9,17 @@ const dgram = require('dgram');
 const EventEmitter = require('events');
 const Connection = require('./connection');
 
+const ConnectionPool = require('./connection-pool');
+
 const DEFAULT_PORT = 41234;
 
-class Ansible extends EventEmitter {
+class AnsibleServer extends EventEmitter {
     constructor(opts) {
         super();
 
         opts = opts || {};
         this.d_server = this._createServer(opts);
-        this.d_clientConnections = {};
+        this.d_connectionPool = new ConnectionPool(this.d_server);
     }
 
     /** "Private" **/
@@ -47,18 +47,11 @@ class Ansible extends EventEmitter {
     }
 
     _onMessageReceived(msg, rinfo) {
-        // If a client connection does not currently exist, create one, and then pass the message on to that
-        // Each connection object will be in charge of managing the protocol for that connection
-
-        const clientAddr = rinfo.address + ':' + rinfo.port;
-        if (!this.d_clientConnections[clientAddr]) {
-            logger.info(`[FTL-ANS] Adding client connection (${clientAddr})`);
-            this.d_clientConnections[clientAddr] = new Connection(this.d_server, rinfo);
-        }
-
-        this.d_clientConnections[clientAddr].processMessage(msg);
+        // Pass along to the connection pool
+        this.d_connectionPool.processMessage(msg, rinfo);
     }
+    
     /** Public API **/
 };
 
-module.exports = Ansible;
+module.exports = AnsibleServer;

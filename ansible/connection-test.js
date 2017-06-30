@@ -49,8 +49,8 @@ describe('Connection', () => {
 
             var doNotReject = false;
             conn.on('stateChanged', (stateInfo) => {
-                if (stateInfo.from === 'pre-connect' &&
-                    stateInfo.to === 'connected') {
+                if (stateInfo.from === 'PRE_CONNECT' &&
+                    stateInfo.to === 'CONNECTED') {
                         doNotReject = true;
                         resolve();
                 }
@@ -73,8 +73,8 @@ describe('Connection', () => {
             var conn = new Connection({}, true, 1000);
 
             conn.on('stateChanged', (stateInfo) => {
-                if (stateInfo.from === 'pre-connect' &&
-                    stateInfo.to === 'connected') {
+                if (stateInfo.from === 'PRE_CONNECT' &&
+                    stateInfo.to === 'CONNECTED') {
                         reject();
                 }
             });
@@ -95,13 +95,13 @@ describe('Connection', () => {
 
             var doNotReject = false;
             conn.on('stateChanged', (stateInfo) => {
-                if (stateInfo.from === 'pre-connect' && 
-                    stateInfo.to === 'connected') {
+                if (stateInfo.from === 'PRE_CONNECT' && 
+                    stateInfo.to === 'CONNECTED') {
                     // Send the CONTROL_REQ message
                     conn.processMessage({DID: 0, CID: 2, SEQ: 1});
                 }
-                else if (stateInfo.from === 'connected' &&
-                    stateInfo.to === 'active') {
+                else if (stateInfo.from === 'CONNECTED' &&
+                    stateInfo.to === 'ACTIVE') {
                         doNotReject = true;
                         resolve();
                 }
@@ -109,7 +109,7 @@ describe('Connection', () => {
 
             conn.on('timedOut', () => {
                if (!doNotReject) {
-                   reject();
+                   reject('timed out');
                }
             });
 
@@ -125,13 +125,13 @@ describe('Connection', () => {
 
             var doNotReject = false;
             conn.on('stateChanged', (stateInfo) => {
-                if (stateInfo.from === 'pre-connect' && 
-                    stateInfo.to === 'connected') {
+                if (stateInfo.from === 'PRE_CONNECT' && 
+                    stateInfo.to === 'CONNECTED') {
                     // Send the CONTROL_REQ message
                     conn.processMessage({DID: 0, CID: 2});
                 }
-                else if (stateInfo.from === 'connected' &&
-                    stateInfo.to === 'queued') {
+                else if (stateInfo.from === 'CONNECTED' &&
+                    stateInfo.to === 'QUEUED') {
                         doNotReject = true;
                         resolve();
                 }
@@ -139,7 +139,7 @@ describe('Connection', () => {
 
             conn.on('timedOut', () => {
                if (!doNotReject) {
-                   reject();
+                   reject('timed out');
                }
             });
 
@@ -161,11 +161,91 @@ describe('Connection', () => {
 
             conn.on('timedOut', () => {
                if (!doNotReject) {
-                   reject();
+                   reject('timed out');
                }
             });
 
             conn.processMessage({DID: 0, CID: 1, SEQ: 1});
+        });
+
+        expect(p).to.be.fulfilled.notify(done);
+    });
+
+    it('emits the correct dataRequired event when needed', (done) => {
+        var p = new Promise((resolve, reject) => {
+            var conn = new Connection({}, true, 1000);
+
+            var doNotReject = false;
+            conn.on('dataRequired', (data) => {
+                expect(data.packet.SEQ).to.equal(3);
+                expect(data.respond).to.be.a('function');
+                doNotReject = true;
+                resolve();
+            });
+
+            conn.on('timedOut', () => {
+                if (!doNotReject) {
+                    reject('timed out');
+                }
+            });
+
+            conn.processMessage({DID: 0, CID: 1, SEQ: 1});
+            conn.processMessage({DID: 0, CID: 2, SEQ: 2});
+            conn.processMessage({DID: 0, CID: 4, SEQ: 3});
+        });
+
+        expect(p).to.be.fulfilled.notify(done);
+    });
+
+    it('responds to a CONTROL_REQ correctly when active', (done) => {
+        var p = new Promise((resolve, reject) => {
+            var conn = new Connection({}, true, 1000);
+
+            var doNotReject = false;
+            conn.on('sendResponse', (data) => {
+                if (data.SEQ === 2) {
+                    expect(data.MRSP).to.be.equal(0);
+                    doNotReject = true;
+                    resolve();
+                }
+            });
+
+            conn.on('timedOut', () => {
+                if (!doNotReject) {
+                    reject('timed out');
+                }
+            });
+
+            conn.processMessage({DID: 0, CID: 1, SEQ: 1});
+            // ControlReq
+            conn.processMessage({DID: 0, CID: 2, SEQ: 2});
+        });
+
+        expect(p).to.be.fulfilled.notify(done);
+    });
+
+    it('responds to a CONTROL_REQ correctly when queued', (done) => {
+        var p = new Promise((resolve, reject) => {
+            var conn = new Connection({}, false, 1000);
+
+            var doNotReject = false;
+            conn.on('sendResponse', (data) => {
+                if (data.SEQ === 2) {
+                    expect(data.MRSP).to.be.equal(1);
+                    doNotReject = true;
+                    resolve();
+                }
+            });
+
+            conn.on('timedOut', () => {
+                if (!doNotReject) {
+                    reject('timed out');
+                }
+            });
+
+            conn.processMessage({DID: 0, CID: 1, SEQ: 1});
+            // ControlReq
+            conn.processMessage({DID: 0, CID: 2, SEQ: 2});
         });
 
         expect(p).to.be.fulfilled.notify(done);

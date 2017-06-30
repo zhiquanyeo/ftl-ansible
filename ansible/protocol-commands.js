@@ -15,21 +15,34 @@ const ProtocolCommands = {
         },
         VERS: {
             DID: 0x00,
-            CID: 0x04
+            CID: 0x04,
+            dataRequired: true,
         }
+    },
+    ROBOT: {
+
+    }
+};
+
+const ProtocolResponses = {
+    ConnectionActiveState: {
+        ACTIVE: 0,
+        QUEUED: 1
     }
 };
 
 // Generate a map
 var commandMap = {};
+var commandToDetails = {}; // e.g. SYS:CONN -> {DID, CID, type}
 for (var deviceId in ProtocolCommands) {
     var deviceCommands = ProtocolCommands[deviceId];
     for (var command in deviceCommands) {
-        var commandBytes = deviceCommands[command];
+        var commandDetails = deviceCommands[command];
 
         var commandDesc = deviceId + ':' + command;
-        var commandKey = commandBytes.DID + ':' + commandBytes.CID;
+        var commandKey = commandDetails.DID + ':' + commandDetails.CID;
         commandMap[commandKey] = commandDesc;
+        commandToDetails[commandDesc] = commandDetails;
     }
 }
 
@@ -42,8 +55,14 @@ function getCommandType(DID, CID) {
     return commandMap[commandKey];
 }
 
+function getCommandDetails(command) {
+    return commandToDetails[command];
+}
+
 module.exports = {
     commands: ProtocolCommands,
+    responses: ProtocolResponses,
     getCommandType: getCommandType,
+    getCommandDetails: getCommandDetails,
     getSysCommandBytes: getSysCommandBytes
 };

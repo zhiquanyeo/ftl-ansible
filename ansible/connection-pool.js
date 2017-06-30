@@ -13,6 +13,7 @@ const logger = require('winston');
 
 const EventEmitter = require('events');
 const Connection = require('./connection');
+const PacketParser = require('./protocol-packet/packet-parser');
 
 function generateClientAddr(rinfo) {
     return rinfo.address + ':' + rinfo.port;
@@ -46,8 +47,14 @@ class ConnectionPool extends EventEmitter {
      * @private
      */
     _newConnection(rinfo) {
+        var connActive = false;
+
+        if (this.d_connectionQueue.length === 0) {
+            connActive = true;
+        }
+
         // Set up the new connection
-        var connection = new Connection(rinfo);
+        var connection = new Connection(rinfo, connActive);
         const clientAddr = generateClientAddr(rinfo);
         
         this.d_connections[clientAddr] = connection;
@@ -73,7 +80,7 @@ class ConnectionPool extends EventEmitter {
     }
 
     _handleConnectionResponse(connection, originalRequest, response) {
-        
+
     }
 
     /** Public API */
@@ -81,6 +88,17 @@ class ConnectionPool extends EventEmitter {
         const clientAddr = generateClientAddr(rinfo);
         if (!this.d_connections[clientAddr]) {
             this._newConnection(rinfo);
+        }
+
+        // Parse the packet
+        var packetInfo = PacketParser.decodeClientPacket(msg);
+        
+        if (packetInfo.ok) {
+
+        }
+        else {
+            logger.warn('[FTL-ANS] Dropping Packet due to error (' + 
+                        packetInfo.errorType +'): ' + packetInfo.errorMsg);
         }
 
         // TODO If it's a CONN or DCONN command, pass it to the connection

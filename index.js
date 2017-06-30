@@ -5,7 +5,7 @@
  */
 const logger = require('winston');
 
-const Ansible = require('./ansible/ansible');
+const AnsibleServer = require('./ansible/ansible-server');
 
-logger.info('Initializing FTL Ansible');
-var ansible = new Ansible();
+logger.info('Initializing FTL AnsibleServer');
+var ansible = new AnsibleServer();
