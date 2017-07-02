@@ -205,6 +205,7 @@ describe('Connection', () => {
             conn.on('sendResponse', (data) => {
                 if (data.SEQ === 2) {
                     expect(data.MRSP).to.be.equal(0);
+                    expect(data.DATA).to.be.equalBytes(new Buffer([0]));
                     doNotReject = true;
                     resolve();
                 }
@@ -231,7 +232,8 @@ describe('Connection', () => {
             var doNotReject = false;
             conn.on('sendResponse', (data) => {
                 if (data.SEQ === 2) {
-                    expect(data.MRSP).to.be.equal(1);
+                    expect(data.MRSP).to.be.equal(0);
+                    expect(data.DATA).to.be.equalBytes(new Buffer([1]));
                     doNotReject = true;
                     resolve();
                 }

@@ -10,6 +10,9 @@ const EventEmitter = require('events');
 const Connection = require('./connection');
 
 const ConnectionPool = require('./connection-pool');
+const ProtocolCommands = require('./protocol-commands');
+
+const ProtocolConstants = ProtocolCommands.Constants;
 
 const DEFAULT_PORT = 41234;
 
@@ -44,6 +47,34 @@ class AnsibleServer extends EventEmitter {
         server.bind(opts.port || DEFAULT_PORT);
 
         return server;
+    }
+
+    _hookupConnectionPoolEvents() {
+        this.d_connectionPool.on('dataRequired', (dataRequiredEvent) => {
+            var timeoutTriggered = false;
+
+            // Forward this up the chain, but set a timeout on a response
+            var timeoutResponder = setTimeout(() => {
+                timeoutTriggered = true;
+                dataRequiredEvent.respond(ProtocolConstants.REQUEST_TIMED_OUT);
+            }, 1500);
+
+            this.emit('dataRequired', {
+                rawPacket: dataRequiredEvent.packet,
+                dataRequired: dataRequiredEvent.dataRequired,
+                respond: function (data) {
+                    clearTimeout(timeoutResponder);
+                    if (!timeoutTriggered) {
+                        dataRequiredEvent.respond(ProtocolConstants.OK, data);
+                    }
+                }
+            });
+        });
+
+        this.d_connectionPool.on('commandReceived', (command, packet) => {
+            // Here, we should convert the command + packet into something more
+            // useful. All binary protocol things should happen at this level
+        });
     }
 
     _onMessageReceived(msg, rinfo) {

@@ -280,4 +280,5 @@ describe('ConnectionPool', () => {
 
         expect(p).to.be.fulfilled.notify(done);
     });
+
 });

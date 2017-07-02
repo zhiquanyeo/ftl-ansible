@@ -34,6 +34,13 @@ const ProtocolResponses = {
     }
 };
 
+const ProtocolConstants = {
+    OK: 0,
+    INVALID_STATE: 1,
+    REQUEST_TIMED_OUT: 2,
+    INVALID_COMMAND: 3,
+};
+
 // Generate a map
 var commandMap = {};
 var commandToDetails = {}; // e.g. SYS:CONN -> {DID, CID, type}
@@ -63,8 +70,9 @@ function getCommandDetails(command) {
 }
 
 module.exports = {
-    commands: ProtocolCommands,
-    responses: ProtocolResponses,
+    Commands: ProtocolCommands,
+    Responses: ProtocolResponses,
+    Constants: ProtocolConstants,
     getCommandType: getCommandType,
     getCommandDetails: getCommandDetails,
     getSysCommandBytes: getSysCommandBytes

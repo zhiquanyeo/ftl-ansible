@@ -2,7 +2,8 @@ const EventEmitter = require('events');
 const ProtocolCommands = require('./protocol-commands');
 
 // Re-map
-const ProtocolResponses = ProtocolCommands.responses;
+const ProtocolResponses = ProtocolCommands.Responses;
+const ProtocolConstants = ProtocolCommands.Constants;
 
 const ConnectionState = {
     PRE_CONNECT : 'PRE_CONNECT',
@@ -113,9 +114,7 @@ class Connection extends EventEmitter {
         var handled = false;
 
         if (command === 'SYS:CONN') {
-            respPacket = _generateResponsePacket(packet.SEQ, 0);
-            // Tell the connection pool to send this on our behalf
-            this.emit('sendResponse', respPacket);
+            respPacket = _generateResponsePacket(packet.SEQ, ProtocolConstants.OK);
             this.d_state = ConnectionState.CONNECTED;
             
             // Also emit a state changed event
@@ -124,6 +123,14 @@ class Connection extends EventEmitter {
                 to: ConnectionState.CONNECTED
             });
             handled = true;
+        }
+        else {
+            respPacket = _generateResponsePacket(packet.SEQ, ProtocolConstants.INVALID_STATE);
+        }
+
+        // Tell the connection pool to send this on our behalf
+        if (respPacket) {
+            this.emit('sendResponse', respPacket);
         }
 
         return handled;
@@ -137,7 +144,8 @@ class Connection extends EventEmitter {
         if (command === 'SYS:CONTROL_REQ') {
             if (this.d_active) {
                 respPacket = _generateResponsePacket(packet.SEQ, 
-                        ProtocolResponses.ConnectionActiveState.ACTIVE);
+                        ProtocolConstants.OK,
+                        new Buffer([ProtocolResponses.ConnectionActiveState.ACTIVE]));
                 this.d_state = ConnectionState.ACTIVE;
                 
                 this.emit('stateChanged', {
@@ -149,7 +157,8 @@ class Connection extends EventEmitter {
             }
             else {
                 respPacket = _generateResponsePacket(packet.SEQ, 
-                        ProtocolResponses.ConnectionActiveState.QUEUED);
+                        ProtocolConstants.OK,
+                        new Buffer([ProtocolResponses.ConnectionActiveState.QUEUED]));
                 this.d_state = ConnectionState.QUEUED;
 
                 this.emit('stateChanged', {
@@ -159,6 +168,10 @@ class Connection extends EventEmitter {
 
                 handled = true;
             }
+        }
+        else {
+            respPacket = _generateResponsePacket(packet.SEQ, 
+                                            ProtocolConstants.INVALID_STATE);
         }
 
         if (respPacket) {
@@ -203,9 +216,13 @@ class Connection extends EventEmitter {
                 // Also emit a commandReceived event
                 // Usually for 'set' style commands
                 this.emit('commandReceived', command, packet);
-                respPacket = _generateResponsePacket(packet.SEQ, 0);
+                respPacket = _generateResponsePacket(packet.SEQ, ProtocolConstants.OK);
                 handled = true;
             }
+        }
+        else {
+            respPacket = _generateResponsePacket(packet.SEQ, 
+                                                ProtocolConstants.INVALID_COMMAND);
         }
         
         if (respPacket) {
@@ -226,14 +243,17 @@ class Connection extends EventEmitter {
         }
 
         // Everything else gets dropped
+        repPacket = _generateResponsePacket(packet.SEQ, ProtocolConstants.INVALID_STATE);
+        this.emit('sendResponse', respPacket);
         return false;
     }
 
     // Common handlers
     _handleHBEAT(packet) {
         var respPacket = _generateResponsePacket(packet.SEQ, 
-                this.d_active ? ProtocolResponses.ConnectionActiveState.ACTIVE :
-                                ProtocolResponses.ConnectionActiveState.QUEUED);
+                ProtocolConstants.OK,
+                this.d_active ? new Buffer([ProtocolResponses.ConnectionActiveState.ACTIVE]) :
+                                new Buffer([ProtocolResponses.ConnectionActiveState.QUEUED]));
         this.emit('sendResponse', respPacket);
     }
 

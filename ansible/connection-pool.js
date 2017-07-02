@@ -103,17 +103,18 @@ class ConnectionPool extends EventEmitter {
     }
 
     _handleConnectionResponse(connection, responsePacket) {
-        // Just forward this along
+        // Just forward this along to the remote socket
         var respBuffer = PacketBuilder.buildServerResponsePacket(responsePacket);
         this.d_socket.send(respBuffer, 0, respBuffer.length, connection.rinfo.port, connection.rinfo.address);
     }
 
     _handleConnectionDataRequired(connection, dataReqdEvt) {
-        // Ask the outside world for help, but attach a timeout(?)
+        // Ask the outside world for help
         this.emit('dataRequired', dataReqdEvt);
     }
 
     _handleCommandReceived(connection, command, packet) {
+        // Just forward this along to any Ansible listeners
         this.emit('commandReceived', command, packet);
     }
 
