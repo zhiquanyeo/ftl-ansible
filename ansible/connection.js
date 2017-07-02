@@ -24,6 +24,10 @@ class Connection extends EventEmitter {
         super();
 
         this.d_rinfo = rinfo;
+        this.d_clientId = rinfo.address + ':' + rinfo.port;
+        this.d_active = false;
+        
+        // Actually set active
         this.active = active;
         this.d_useHeartbeat = false;
         
@@ -41,6 +45,18 @@ class Connection extends EventEmitter {
         }
 
         this.d_state = ConnectionState.PRE_CONNECT;
+    }
+
+    get clientId() {
+        return this.d_clientId;
+    }
+
+    get rinfo() {
+        return this.d_rinfo;
+    }
+
+    get active() {
+        return this.d_active;
     }
 
     set active(val) {
@@ -170,6 +186,7 @@ class Connection extends EventEmitter {
         if (commandDetails) {
             // if we need data, forward it out, otherwise just say we need to 
             // send a response
+            // Usually for 'get' style commands
             if (commandDetails.dataRequired) {
                 this.emit('dataRequired', {
                     packet: packet,
@@ -183,6 +200,9 @@ class Connection extends EventEmitter {
                 handled = true;
             }
             else {
+                // Also emit a commandReceived event
+                // Usually for 'set' style commands
+                this.emit('commandReceived', command, packet);
                 respPacket = _generateResponsePacket(packet.SEQ, 0);
                 handled = true;
             }

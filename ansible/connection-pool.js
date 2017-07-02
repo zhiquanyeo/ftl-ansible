@@ -14,6 +14,7 @@ const logger = require('winston');
 const EventEmitter = require('events');
 const Connection = require('./connection');
 const PacketParser = require('./protocol-packet/packet-parser');
+const PacketBuilder = require('./protocol-packet/packet-builder');
 
 function generateClientAddr(rinfo) {
     return rinfo.address + ':' + rinfo.port;
@@ -69,21 +70,58 @@ class ConnectionPool extends EventEmitter {
                 this._handleConnectionStateChanged.bind(this, connection));
         connection.on('sendResponse', 
                 this._handleConnectionResponse.bind(this, connection));
+        connection.on('dataRequired',
+                this._handleConnectionDataRequired.bind(this, connection));
+        connection.on('commandReceived',
+                this._handleCommandReceived.bind(this, connection));
     }
 
     _handleConnectionTimeout(connection) {
+        // Splice out the connection
+        var connectionRemoved = false;
+        for (var i = 0; i < this.d_connectionQueue.length; i++) {
+            if (this.d_connectionQueue[i].clientAddr === connection.clientId) {
+                connectionRemoved = true;
+                this.d_connectionQueue.splice(i, 1);
+                break;
+            }
+        }
 
+        if (!connectionRemoved) {
+            logger.warn('[FTL-ANS] Could not find connection ' + connection.clientId + ' for removal');
+            return;
+        }
+
+        // Inform the new first connection that they are active
+        if (this.d_connectionQueue.length > 0) {
+            this.d_connectionQueue[0].connection.active = true;
+        }
     }
 
     _handleConnectionStateChanged(connection, stateInfo) {
-
+        // This might not be needed?
     }
 
-    _handleConnectionResponse(connection, originalRequest, response) {
+    _handleConnectionResponse(connection, responsePacket) {
+        // Just forward this along
+        var respBuffer = PacketBuilder.buildServerResponsePacket(responsePacket);
+        this.d_socket.send(respBuffer, 0, respBuffer.length, connection.rinfo.port, connection.rinfo.address);
+    }
 
+    _handleConnectionDataRequired(connection, dataReqdEvt) {
+        // Ask the outside world for help, but attach a timeout(?)
+        this.emit('dataRequired', dataReqdEvt);
+    }
+
+    _handleCommandReceived(connection, command, packet) {
+        this.emit('commandReceived', command, packet);
     }
 
     /** Public API */
+    get numConnections() {
+        return this.d_connectionQueue.length;
+    }
+
     processMessage(msg, rinfo) {
         const clientAddr = generateClientAddr(rinfo);
         if (!this.d_connections[clientAddr]) {
@@ -94,15 +132,15 @@ class ConnectionPool extends EventEmitter {
         var packetInfo = PacketParser.decodeClientPacket(msg);
         
         if (packetInfo.ok) {
-
+            var activeConnection = this._activeConnection();
+            if (activeConnection) {
+                activeConnection.processMessage(packetInfo.packet);
+            }
         }
         else {
             logger.warn('[FTL-ANS] Dropping Packet due to error (' + 
                         packetInfo.errorType +'): ' + packetInfo.errorMsg);
         }
-
-        // TODO If it's a CONN or DCONN command, pass it to the connection
-        // Otherwise, we should check if this is bound for the active connection
     }
 
 }

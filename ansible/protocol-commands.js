@@ -20,7 +20,10 @@ const ProtocolCommands = {
         }
     },
     ROBOT: {
-
+        SETMOTOR: {
+            DID: 0x01,
+            CID: 0x01
+        }
     }
 };
 

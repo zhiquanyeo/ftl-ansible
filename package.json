@@ -4,7 +4,7 @@
   "description": "Server based interface for communicating with robot hardware",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha ansible --recursive"
   },
   "repository": {
     "type": "git",
