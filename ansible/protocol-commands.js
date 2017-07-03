@@ -33,7 +33,8 @@ const ProtocolCommands = {
                 {
                     name: 'port',
                     offset: 0,
-                    length: 1
+                    length: 1,
+                    type: 'uint8'
                 }
             ]
         },
@@ -45,7 +46,8 @@ const ProtocolCommands = {
                 {
                     name: 'port',
                     offset: 0,
-                    length: 1
+                    length: 1,
+                    type: 'uint8'
                 }
             ]
         },

@@ -19,7 +19,10 @@
   "devDependencies": {
     "chai": "^4.0.2",
     "chai-as-promised": "^7.0.0",
-    "chai-bytes": "^0.1.1"
+    "chai-bytes": "^0.1.1",
+    "mockery": "^2.1.0",
+    "sinon": "^2.3.6",
+    "sinon-test": "^2.0.0"
   },
   "dependencies": {
     "promise": "^8.0.0",

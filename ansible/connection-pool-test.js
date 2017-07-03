@@ -167,7 +167,7 @@ describe('ConnectionPool', () => {
             var connPool = new ConnectionPool(mockSocket);
 
             connPool.on('dataRequired', (evt) => {
-                expect(evt.dataRequired).to.equal('SYS:VERS');
+                expect(evt.command).to.equal('SYS:VERS');
                 expect(evt.respond).to.be.a('function');
                 resolve();
             });
@@ -214,7 +214,7 @@ describe('ConnectionPool', () => {
             var connPool = new ConnectionPool(mockSocket);
 
             connPool.on('dataRequired', (evt) => {
-                expect(evt.dataRequired).to.equal('SYS:VERS');
+                expect(evt.command).to.equal('SYS:VERS');
                 expect(evt.respond).to.be.a('function');
                 evt.respond(0, new Buffer([1]));
                 

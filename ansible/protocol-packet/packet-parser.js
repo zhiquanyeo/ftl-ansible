@@ -7,6 +7,13 @@ function initialChecks(buffer, returnObj, templateType) {
     var minPacketSize = templateType.minPacketSize;
     var headerSize = templateType.headerSize;
 
+    // Check min size
+    if (buffer.length < minPacketSize) {
+        returnObj.errorType = PacketConstants.ErrorTypes.InvalidPacketSize;
+        returnObj.errorMsg = 'Invalid Packet Size';
+        return false;
+    }
+
     // Check Header
     if (buffer.readUInt8(template.SOP1) !== 0xFF) {
         returnObj.errorType = PacketConstants.ErrorTypes.InvalidHeader;

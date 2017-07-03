@@ -15,6 +15,43 @@ const ProtocolConstants = ProtocolCommands.Constants;
 
 const DEFAULT_PORT = 41234;
 
+function _generateParamsList(commandInfo, rawPacket) {
+    var ret = {};
+    if (!commandInfo || !commandInfo.params || !rawPacket) {
+        return ret;
+    }
+
+    for (var i = 0; i < commandInfo.params.length; i++) {
+        var param = commandInfo.params[i];
+        var value;
+        if (param.type) {
+            switch(param.type) {
+                case 'uint8': {
+                    value = rawPacket.DATA.readUInt8(param.offset);
+                } break;
+                case 'int8': {
+                    value = rawPacket.DATA.readInt8(param.offset);
+                } break;
+                case 'uint16': {
+                    value = rawPacket.DATA.readUInt16(param.offset);
+                } break;
+                case 'int16': {
+                    value = rawPacket.DATA.readInt16(param.offset);
+                } break;
+                default: {
+                    value = rawPacket.DATA.slice(param.offset, param.offset + param.length);
+                }
+            }
+        }
+        else {
+            value = rawPacket.DATA.slice(param.offset, param.offset + param.length);
+        }
+        ret[param.name] = value;
+    }
+
+    return ret;
+}
+
 class AnsibleServer extends EventEmitter {
     constructor(opts) {
         super();
@@ -59,12 +96,11 @@ class AnsibleServer extends EventEmitter {
                 dataRequiredEvent.respond(ProtocolConstants.REQUEST_TIMED_OUT);
             }, 1500);
 
-            // TODO We should also do some transformation here. Maybe not pass the
-            // raw packet, but instead transform the event into a higher-level form
             this.emit('dataRequired', {
-                rawPacket: dataRequiredEvent.packet,
-                dataRequired: dataRequiredEvent.dataRequired,
-                params: {}, // <-- This should get generated according to protocol
+                command: dataRequiredEvent.dataRequired,
+                params: _generateParamsList(
+                            ProtocolCommands.getCommandDetails(dataRequiredEvent.dataRequired),
+                            dataRequiredEvent.packet.DATA),
                 respond: function (data) {
                     clearTimeout(timeoutResponder);
                     if (!timeoutTriggered) {
@@ -77,6 +113,12 @@ class AnsibleServer extends EventEmitter {
         this.d_connectionPool.on('commandReceived', (command, packet) => {
             // Here, we should convert the command + packet into something more
             // useful. All binary protocol things should happen at this level
+            this.emit('commandReceived', {
+                command: command,
+                params: _generateParamsList(
+                            ProtocolCommands.getCommandDetails(command),
+                            packet.DATA)
+            })
         });
     }
 
@@ -91,8 +133,8 @@ class AnsibleServer extends EventEmitter {
      * Send a non-response, non-solicited message back to an Ansible client
      * Usually used for async events, or for streaming data
      */
-    sendAsyncMessage(idCode, data) {
-        this.d_connectionPool.sendAsyncMessage(idCode, data);
+    sendAsyncMessage(idCode, data, broadcast) {
+        this.d_connectionPool.sendAsyncMessage(idCode, data, broadcast);
     }
 };
 

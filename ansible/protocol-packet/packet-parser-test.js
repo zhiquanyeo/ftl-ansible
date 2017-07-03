@@ -50,6 +50,17 @@ describe('PacketParser', () => {
         expect(testPacket.DATA).to.equalBytes(expectedPacket.DATA);
     });
 
+    it('correctly rejects smaller than normal sized packets', () => {
+        var inboundBuf = new Buffer([0xFF, 0x01]); // 2 sized buffer
+
+        var testPacketInfo = PacketParser.decodeClientPacket(inboundBuf);
+        expect(testPacketInfo.ok).to.be.false;
+        testPacketInfo = PacketParser.decodeServerAsyncPacket(inboundBuf);
+        expect(testPacketInfo.ok).to.be.false;
+        testPacketInfo = PacketParser.decodeServerResponsePacket(inboundBuf);
+        expect(testPacketInfo.ok).to.be.false;
+    });
+
     it('correctly rejects incorrect checksum in client packet', () => {
         var inboundBuf = new Buffer([0xFF, 0xFE, 0x00, 0x01, 0x01, 0x01, 0xAA]);
         var expectedPacket = {

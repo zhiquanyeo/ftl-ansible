@@ -203,7 +203,7 @@ class Connection extends EventEmitter {
             if (commandDetails.dataRequired) {
                 this.emit('dataRequired', {
                     packet: packet,
-                    dataRequired: command,
+                    command: command,
                     respond: function (mrsp, data) {
                         var respPacket = _generateResponsePacket(packet.SEQ,
                                                             mrsp, data);

@@ -1,11 +1,9 @@
 /**
- * Driver Application
- * 
- * This module instantiates the gateway
+ * Map to the various components in the ftl-ansible library
  */
-const logger = require('winston');
 
 const AnsibleServer = require('./ansible/ansible-server');
 
-logger.info('Initializing FTL AnsibleServer');
-var ansible = new AnsibleServer();
+module.exports = {
+    AnsibleServer: AnsibleServer
+};
