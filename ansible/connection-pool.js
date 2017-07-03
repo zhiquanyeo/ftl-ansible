@@ -144,6 +144,28 @@ class ConnectionPool extends EventEmitter {
         }
     }
 
+    sendAsyncMessage(idCode, data, broadcast) {
+        var asyncPacket = {
+            ID_CODE: idCode,
+            DATA: data
+        };
+
+        var buf = PacketBuilder.buildServerAsyncPacket(asyncPacket);
+        if (!broadcast) {
+            var activeConnection = this._activeConnection();
+            if (activeConnection) {
+                var activeRinfo = activeConnection.rinfo;
+                this.d_socket.send(buf, 0, buf.length, activeRinfo.port, activeRinfo.address);
+            }
+        }
+        else {
+            this.d_connectionQueue.forEach((connEntry) => {
+                var rinfo = connEntry.connection.rinfo;
+                var bufcpy = buf.slice(0);
+                this.d_socket.send(bufcpy, 0, bufcpy.length, rinfo.port, rinfo.address);
+            });
+        }
+    }
 }
 
 module.exports = ConnectionPool;

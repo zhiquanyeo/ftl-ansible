@@ -7,7 +7,6 @@ const logger = require('winston');
 const dgram = require('dgram');
 
 const EventEmitter = require('events');
-const Connection = require('./connection');
 
 const ConnectionPool = require('./connection-pool');
 const ProtocolCommands = require('./protocol-commands');
@@ -65,6 +64,7 @@ class AnsibleServer extends EventEmitter {
             this.emit('dataRequired', {
                 rawPacket: dataRequiredEvent.packet,
                 dataRequired: dataRequiredEvent.dataRequired,
+                params: {}, // <-- This should get generated according to protocol
                 respond: function (data) {
                     clearTimeout(timeoutResponder);
                     if (!timeoutTriggered) {
@@ -92,7 +92,7 @@ class AnsibleServer extends EventEmitter {
      * Usually used for async events, or for streaming data
      */
     sendAsyncMessage(idCode, data) {
-        
+        this.d_connectionPool.sendAsyncMessage(idCode, data);
     }
 };
 

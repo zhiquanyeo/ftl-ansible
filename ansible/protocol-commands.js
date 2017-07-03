@@ -1,4 +1,5 @@
 // These are all commands originating from the client side
+// Documented with parameters and byte length/offset in the data field
 const ProtocolCommands = {
     SYS: {
         CONN: {
@@ -17,13 +18,41 @@ const ProtocolCommands = {
             DID: 0x00,
             CID: 0x04,
             dataRequired: true,
+        },
+        SHUTDOWN: {
+            DID: 0x00,
+            CID: 0x05
         }
     },
     ROBOT: {
-        SETMOTOR: {
+        GET_DIGITAL: {
             DID: 0x01,
-            CID: 0x01
-        }
+            CID: 0x01,
+            dataRequired: true,
+            params: [
+                {
+                    name: 'port',
+                    offset: 0,
+                    length: 1
+                }
+            ]
+        },
+        GET_ANALOG: {
+            DID: 0x01,
+            CID: 0x02,
+            dataRequired: true,
+            params: [
+                {
+                    name: 'port',
+                    offset: 0,
+                    length: 1
+                }
+            ]
+        },
+        SET_MOTOR: {
+            DID: 0x01,
+            CID: 0x03
+        },
     }
 };
 
