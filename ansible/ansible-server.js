@@ -23,6 +23,7 @@ class AnsibleServer extends EventEmitter {
         opts = opts || {};
         this.d_server = this._createServer(opts);
         this.d_connectionPool = new ConnectionPool(this.d_server);
+        this._hookupConnectionPoolEvents();
     }
 
     /** "Private" **/
@@ -59,6 +60,8 @@ class AnsibleServer extends EventEmitter {
                 dataRequiredEvent.respond(ProtocolConstants.REQUEST_TIMED_OUT);
             }, 1500);
 
+            // TODO We should also do some transformation here. Maybe not pass the
+            // raw packet, but instead transform the event into a higher-level form
             this.emit('dataRequired', {
                 rawPacket: dataRequiredEvent.packet,
                 dataRequired: dataRequiredEvent.dataRequired,
@@ -83,6 +86,14 @@ class AnsibleServer extends EventEmitter {
     }
     
     /** Public API **/
+    
+    /**
+     * Send a non-response, non-solicited message back to an Ansible client
+     * Usually used for async events, or for streaming data
+     */
+    sendAsyncMessage(idCode, data) {
+        
+    }
 };
 
 module.exports = AnsibleServer;
