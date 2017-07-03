@@ -53,7 +53,15 @@ const ProtocolCommands = {
         },
         SET_MOTOR: {
             DID: 0x01,
-            CID: 0x03
+            CID: 0x03,
+            params: [
+                {
+                    name: 'port',
+                    offset: 0,
+                    length: 2,
+                    type: 'int16'
+                }
+            ]
         },
     }
 };

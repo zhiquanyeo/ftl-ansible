@@ -121,4 +121,47 @@ describe('Ansible Server', () => {
 
         sinon.assert.calledOnce(msgReceivedSpy);
     }));
+
+    it('should emit a commandReceived event correctly', (done) => {
+        var p = new Promise((resolve, reject) => {
+            mockSocket.reset();
+            var server = new AnsibleServer();
+
+            server.on('commandReceived', (commandEvent) => {
+                expect(commandEvent.command).to.be.equal('ROBOT:SET_MOTOR');
+                expect(commandEvent.params).to.have.all.keys('port');
+                expect(commandEvent.params.port).to.be.equal(0x0BCD);
+                resolve();
+            })
+
+            var mockRinfo = {
+                address: 'localhost',
+                port: 1
+            }
+
+            var packetBuf = PacketBuilder.buildClientPacket({
+                SEQ: 1,
+                DID: 0,
+                CID: 1
+            });
+            mockSocket.emit('message', packetBuf, mockRinfo);
+
+            packetBuf = PacketBuilder.buildClientPacket({
+                SEQ: 2,
+                DID: 0,
+                CID: 2
+            });
+            mockSocket.emit('message', packetBuf, mockRinfo);
+
+            packetBuf = PacketBuilder.buildClientPacket({
+                SEQ: 3,
+                DID: 1,
+                CID: 3,
+                DATA: new Buffer([0x0B, 0xCD])
+            });
+            mockSocket.emit('message', packetBuf, mockRinfo);
+        });
+
+        expect(p).to.be.fulfilled.notify(done);
+    });
 });

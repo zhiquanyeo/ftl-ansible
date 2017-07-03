@@ -15,9 +15,9 @@ const ProtocolConstants = ProtocolCommands.Constants;
 
 const DEFAULT_PORT = 41234;
 
-function _generateParamsList(commandInfo, rawPacket) {
+function _generateParamsList(commandInfo, rawData) {
     var ret = {};
-    if (!commandInfo || !commandInfo.params || !rawPacket) {
+    if (!commandInfo || !commandInfo.params || !rawData) {
         return ret;
     }
 
@@ -27,19 +27,19 @@ function _generateParamsList(commandInfo, rawPacket) {
         if (param.type) {
             switch(param.type) {
                 case 'uint8': {
-                    value = rawPacket.DATA.readUInt8(param.offset);
+                    value = rawData.readUInt8(param.offset);
                 } break;
                 case 'int8': {
-                    value = rawPacket.DATA.readInt8(param.offset);
+                    value = rawData.readInt8(param.offset);
                 } break;
                 case 'uint16': {
-                    value = rawPacket.DATA.readUInt16(param.offset);
+                    value = rawData.readUInt16BE(param.offset);
                 } break;
                 case 'int16': {
-                    value = rawPacket.DATA.readInt16(param.offset);
+                    value = rawData.readInt16BE(param.offset);
                 } break;
                 default: {
-                    value = rawPacket.DATA.slice(param.offset, param.offset + param.length);
+                    value = rawData.slice(param.offset, param.offset + param.length);
                 }
             }
         }
