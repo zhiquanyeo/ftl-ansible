@@ -1,5 +1,10 @@
 // These are all commands originating from the client side
 // Documented with parameters and byte length/offset in the data field
+const ProtocolVersions = {
+    API_MAJOR: 0x01,
+    API_MINOR: 0x00,
+};
+
 const ProtocolCommands = {
     SYS: {
         CONN: {
@@ -51,9 +56,63 @@ const ProtocolCommands = {
                 }
             ]
         },
-        SET_MOTOR: {
+        SET_DIGITAL: {
             DID: 0x01,
             CID: 0x03,
+            params: [
+                {
+                    name: 'port',
+                    offset: 0,
+                    length: 1,
+                    type: 'uint8'
+                },
+                {
+                    name: 'value',
+                    offset: 1,
+                    length: 1,
+                    type: 'uint8'
+                }
+            ]
+        },
+        SET_ANALOG: {
+            DID: 0x01,
+            CID: 0x04,
+            params: [
+                {
+                    name: 'port',
+                    offset: 0,
+                    length: 1,
+                    type: 'uint8'
+                },
+                {
+                    name: 'value',
+                    offset: 1,
+                    length: 2,
+                    type: 'uint16'
+                }
+            ]
+        },
+        SET_PWM: {
+            DID: 0x01,
+            CID: 0x05,
+            params: [
+                {
+                    name: 'port',
+                    offset: 0,
+                    length: 1,
+                    type: 'uint8'
+                },
+                {
+                    name: 'value',
+                    offset: 1,
+                    length: 2,
+                    type: 'int16'
+                }
+            ]
+        },
+        SET_MOTOR: {
+            DID: 0x01,
+            CID: 0x06,
             params: [
                 {
                     name: 'port',
@@ -112,6 +171,8 @@ module.exports = {
     Commands: ProtocolCommands,
     Responses: ProtocolResponses,
     Constants: ProtocolConstants,
+    VersionInfo: ProtocolVersions,
+
     getCommandType: getCommandType,
     getCommandDetails: getCommandDetails,
     getSysCommandBytes: getSysCommandBytes

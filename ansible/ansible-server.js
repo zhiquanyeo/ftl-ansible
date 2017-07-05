@@ -97,7 +97,7 @@ class AnsibleServer extends EventEmitter {
             }, 1500);
 
             this.emit('dataRequired', {
-                command: dataRequiredEvent.dataRequired,
+                command: dataRequiredEvent.command,
                 params: _generateParamsList(
                             ProtocolCommands.getCommandDetails(dataRequiredEvent.dataRequired),
                             dataRequiredEvent.packet.DATA),

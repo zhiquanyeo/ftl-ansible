@@ -128,9 +128,11 @@ describe('Ansible Server', () => {
             var server = new AnsibleServer();
 
             server.on('commandReceived', (commandEvent) => {
-                expect(commandEvent.command).to.be.equal('ROBOT:SET_MOTOR');
-                expect(commandEvent.params).to.have.all.keys('port');
-                expect(commandEvent.params.port).to.be.equal(0x0BCD);
+                server.removeAllListeners();
+                expect(commandEvent.command).to.equal('ROBOT:SET_DIGITAL');
+                expect(commandEvent.params).to.have.all.keys('port', 'value');
+                expect(commandEvent.params.port).to.equal(11);
+                expect(commandEvent.params.value).to.equal(0xCD);
                 resolve();
             })
 
@@ -158,6 +160,47 @@ describe('Ansible Server', () => {
                 DID: 1,
                 CID: 3,
                 DATA: new Buffer([0x0B, 0xCD])
+            });
+            mockSocket.emit('message', packetBuf, mockRinfo);
+        });
+
+        expect(p).to.be.fulfilled.notify(done);
+    });
+
+    it('should emit a dataRequired event correctly', (done) => {
+        var p = new Promise((resolve, reject) => {
+            mockSocket.reset();
+            var server = new AnsibleServer();
+            server.on('dataRequired', (dataReqEvent) => {
+                server.removeAllListeners();
+                expect(dataReqEvent.command).to.be.equal('SYS:VERS');
+                expect(dataReqEvent.respond).to.be.a('function');
+                resolve();
+            });
+
+            var mockRinfo = {
+                address: 'localhost',
+                port: 1
+            }
+
+            var packetBuf = PacketBuilder.buildClientPacket({
+                SEQ: 1,
+                DID: 0,
+                CID: 1
+            });
+            mockSocket.emit('message', packetBuf, mockRinfo);
+
+            packetBuf = PacketBuilder.buildClientPacket({
+                SEQ: 2,
+                DID: 0,
+                CID: 2
+            });
+            mockSocket.emit('message', packetBuf, mockRinfo);
+
+            packetBuf = PacketBuilder.buildClientPacket({
+                SEQ: 3,
+                DID: 0,
+                CID: 4,
             });
             mockSocket.emit('message', packetBuf, mockRinfo);
         });

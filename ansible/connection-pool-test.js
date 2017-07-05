@@ -270,7 +270,7 @@ describe('ConnectionPool', () => {
             var connPool = new ConnectionPool(mockSocket);
 
             connPool.on('commandReceived', (command, packet) => {
-                expect(command).to.equal('ROBOT:SET_MOTOR');
+                expect(command).to.equal('ROBOT:SET_DIGITAL');
                 resolve();
             });
 
@@ -297,7 +297,7 @@ describe('ConnectionPool', () => {
             });
             connPool.processMessage(conn1packet, conn1rinfo);
 
-            //SETMOTOR packet
+            //SET_DIGITAL packet
             conn1packet = PacketBuilder.buildClientPacket({
                 SEQ: 3,
                 DID: 1,
