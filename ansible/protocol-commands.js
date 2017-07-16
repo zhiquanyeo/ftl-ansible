@@ -9,24 +9,29 @@ const ProtocolCommands = {
     SYS: {
         CONN: {
             DID: 0x00,
-            CID: 0x01
+            CID: 0x01,
+            clientFnName: 'sendConn'
         },
         CONTROL_REQ: {
             DID: 0x00,
-            CID: 0x02
+            CID: 0x02,
+            clientFnName: 'sendControlReq'
         },
         HBEAT: {
             DID: 0x00,
-            CID: 0x03
+            CID: 0x03,
+            clientFnName: 'sendHbeat'
         },
         VERS: {
             DID: 0x00,
             CID: 0x04,
             dataRequired: true,
+            clientFnName: 'getVers'
         },
         SHUTDOWN: {
             DID: 0x00,
-            CID: 0x05
+            CID: 0x05,
+            clientFnName: 'shutdown'
         }
     },
     ROBOT: {
@@ -41,7 +46,9 @@ const ProtocolCommands = {
                     length: 1,
                     type: 'uint8'
                 }
-            ]
+            ],
+            clientFnName: 'getDigital',
+            providesCallback: true
         },
         GET_ANALOG: {
             DID: 0x01,
@@ -54,7 +61,9 @@ const ProtocolCommands = {
                     length: 1,
                     type: 'uint8'
                 }
-            ]
+            ],
+            clientFnName: 'getAnalog',
+            providesCallback: true
         },
         SET_DIGITAL: {
             DID: 0x01,
@@ -72,7 +81,8 @@ const ProtocolCommands = {
                     length: 1,
                     type: 'uint8'
                 }
-            ]
+            ],
+            clientFnName: 'setDigital'
         },
         SET_ANALOG: {
             DID: 0x01,
@@ -90,7 +100,8 @@ const ProtocolCommands = {
                     length: 2,
                     type: 'uint16'
                 }
-            ]
+            ],
+            clientFnName: 'setAnalog'
         },
         SET_PWM: {
             DID: 0x01,
@@ -108,7 +119,8 @@ const ProtocolCommands = {
                     length: 2,
                     type: 'int16'
                 }
-            ]
+            ],
+            clientFnName: 'setPwm'
         },
         SET_MOTOR: {
             DID: 0x01,
@@ -117,10 +129,17 @@ const ProtocolCommands = {
                 {
                     name: 'port',
                     offset: 0,
+                    length: 1,
+                    type: 'uint8'
+                },
+                {
+                    name: 'value',
+                    offset: 1,
                     length: 2,
                     type: 'int16'
                 }
-            ]
+            ],
+            clientFnName: 'setMotor'
         },
     }
 };

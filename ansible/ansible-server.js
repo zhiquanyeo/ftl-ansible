@@ -67,18 +67,18 @@ class AnsibleServer extends EventEmitter {
         const server = dgram.createSocket('udp4');
         
         server.on('error', (err) => {
-            logger.error(`[FTL-ANS] UDP Server Error:\n${err.stack}`);
+            logger.error(`[FTL-ANS-SRV] UDP Server Error:\n${err.stack}`);
+            this.emit('error', err);
             server.close();
         });
 
         server.on('message', (msg, rinfo) => {
-            logger.info(`[FTL-ANS] UDP Server Message: ${msg} from ${rinfo.address}:${rinfo.port}`);
             this._onMessageReceived(msg, rinfo);
         });
 
         server.on('listening', () => {
             const address = server.address();
-            logger.info(`[FTL-ANS] UDP Server Listening ${address.address}:${address.port}`);
+            logger.info(`[FTL-ANS-SRV] UDP Server Listening ${address.address}:${address.port}`);
         });
 
         server.bind(opts.port || DEFAULT_PORT);

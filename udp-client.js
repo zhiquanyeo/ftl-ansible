@@ -22,3 +22,7 @@ setInterval(() => {
         }
     })
 }, 2000);
+
+const AnsibleClient = require('./ansible/ansible-client');
+var aClient = new AnsibleClient();
+aClient.sendConn();
