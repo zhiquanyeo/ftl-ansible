@@ -13,6 +13,13 @@ const PacketBuilder = require('./protocol-packet/packet-builder');
 const DEFAULT_ADDR = 'localhost';
 const DEFAULT_PORT = 41234;
 
+const ConnectionState = {
+    PRE_CONNECT : 'PRE_CONNECT',
+    CONNECTED   : 'CONNECTED',
+    ACTIVE      : 'ACTIVE',
+    QUEUED      : 'QUEUED'
+};
+
 class AnsibleClient extends EventEmitter {
     constructor(opts) {
         super();
@@ -26,6 +33,9 @@ class AnsibleClient extends EventEmitter {
 
         this.d_seq = 1;
         this.d_outstandingRequests = {};
+
+        this.d_connected = false;
+        this.d_state = ConnectionState.PRE_CONNECT;
     }
 
     /** Private **/
@@ -46,6 +56,13 @@ class AnsibleClient extends EventEmitter {
     }
 
     _onMessageReceived(msg, rinfo) {
+
+    }
+
+    connect() {
+        if (this.d_connected) {
+            return;
+        }
 
     }
 };
@@ -118,8 +135,8 @@ Object.keys(ProtocolCommands.Commands).forEach((device) => {
                     timestamp: Date.now(),
                 };
 
-                if (cmdInfo.providesCallback && 
-                    arguments.length > numParams && 
+                // Always support a callback to indicate receipt (at least)
+                if (arguments.length > numParams && 
                     typeof arguments[numParams] === 'function') {
                     pendingRequest.callback = arguments[numParams];
                 }
@@ -131,7 +148,7 @@ Object.keys(ProtocolCommands.Commands).forEach((device) => {
                       (err) => {
                             if (err) {
                                 this.emit('error', err);
-                                logger.error('[FTL-ANS-CLI] Error while sendind: ', err);
+                                logger.error('[FTL-ANS-CLI] Error while sending: ', err);
                             }
                             // Remove this from the outstanding requests
                             delete this.d_outstandingRequests[seqNum];
