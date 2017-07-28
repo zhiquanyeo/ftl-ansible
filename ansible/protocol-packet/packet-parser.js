@@ -54,6 +54,18 @@ function initialChecks(buffer, returnObj, templateType) {
     return true;
 }
 
+function checkServerPacketType(buffer) {
+    if (buffer) {
+        if (buffer[0] === 0xFF && buffer[1] === 0xFF) {
+            return 'RESPONSE';
+        }
+        if (buffer[0] === 0xFF && buffer[1] === 0xFE) {
+            return 'ASYNC';
+        }
+    }
+    return 'UNKNOWN';
+}
+
 function decodeClientPacket(buffer) {
     const template = PacketTemplates.Client.template;
     const minPacketSize = PacketTemplates.Client.minPacketSize;
@@ -156,5 +168,6 @@ function decodeServerAsyncPacket(buffer) {
 module.exports = {
     decodeClientPacket: decodeClientPacket,
     decodeServerResponsePacket: decodeServerResponsePacket,
-    decodeServerAsyncPacket: decodeServerAsyncPacket
+    decodeServerAsyncPacket: decodeServerAsyncPacket,
+    checkServerPacketType: checkServerPacketType
 };

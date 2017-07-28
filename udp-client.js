@@ -25,4 +25,14 @@ setInterval(() => {
 
 const AnsibleClient = require('./ansible/ansible-client');
 var aClient = new AnsibleClient();
-aClient.sendConn();
+
+for (var k in aClient) {
+    console.log('key = ', k);
+}
+aClient.sendConnP()
+.then(() => {
+    console.log('OK');
+})
+.catch((err) => {
+    console.log('Error: ', err);
+});

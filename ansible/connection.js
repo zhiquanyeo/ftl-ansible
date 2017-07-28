@@ -189,7 +189,11 @@ class Connection extends EventEmitter {
 
         switch(command) {
             case 'SYS:HBEAT': {
-                _handleHBEAT();
+                this._handleHBEAT();
+                return true;
+            }
+            case 'SYS:CLOSE': {
+                this._handleClose();
                 return true;
             }
         }
@@ -237,7 +241,11 @@ class Connection extends EventEmitter {
 
         switch(command) {
             case 'SYS:HBEAT': {
-                _handleHBEAT();
+                this._handleHBEAT();
+                return true;
+            }
+            case 'SYS:CLOSE': {
+                this._handleClose();
                 return true;
             }
         }
@@ -257,6 +265,9 @@ class Connection extends EventEmitter {
         this.emit('sendResponse', respPacket);
     }
 
+    _handleClose(packet) {
+        this.emit('closed');
+    }
 }
 
 module.exports = Connection;

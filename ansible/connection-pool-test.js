@@ -134,6 +134,66 @@ describe('ConnectionPool', () => {
         expect(connPool.d_connectionQueue[1].connection.clientId).to.equal('localhost:2');
     });
 
+    it('handles closed connections properly', () => {
+        mockSocket.reset();
+        var connPool = new ConnectionPool(mockSocket);
+
+        // Set up 2 connections
+        var conn1rinfo = {
+            address: 'localhost',
+            port: 1
+        };
+        var conn1packet = PacketBuilder.buildClientPacket({
+            SEQ: 1,
+            DID: 0,
+            CID: 1
+        });
+
+        var conn2rinfo = {
+            address: 'localhost',
+            port: 2
+        };
+        var conn2packet = PacketBuilder.buildClientPacket({
+            SEQ: 1,
+            DID: 0,
+            CID: 1
+        });
+
+        connPool.processMessage(conn1packet, conn1rinfo);
+        connPool.processMessage(conn2packet, conn2rinfo);
+
+        expect(connPool.numConnections).to.equal(2);
+        expect(connPool.d_connectionQueue[0].connection.active).to.equal(true);
+        expect(connPool.d_connectionQueue[1].connection.active).to.equal(false);
+        expect(connPool.d_connectionQueue[0].connection.clientId).to.equal('localhost:1');
+        expect(connPool.d_connectionQueue[1].connection.clientId).to.equal('localhost:2');
+
+        conn1packet = PacketBuilder.buildClientPacket({
+            SEQ: 2,
+            DID: 0,
+            CID: 2
+        });
+        connPool.processMessage(conn1packet, conn1rinfo);
+
+        conn2packet = PacketBuilder.buildClientPacket({
+            SEQ: 2,
+            DID: 0,
+            CID: 2
+        });
+        connPool.processMessage(conn2packet, conn2rinfo);
+
+        conn1packet = PacketBuilder.buildClientPacket({
+            SEQ: 3,
+            DID: 0,
+            CID: 6
+        });
+        connPool.processMessage(conn1packet, conn1rinfo);
+
+        expect(connPool.numConnections).to.equal(1);
+        expect(connPool.d_connectionQueue[0].connection.active).to.equal(true);
+        expect(connPool.d_connectionQueue[0].connection.clientId).to.equal('localhost:2');
+    });
+
     it('sends a response correctly', () => {
         mockSocket.reset();
         var connPool = new ConnectionPool(mockSocket);

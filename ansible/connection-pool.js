@@ -65,7 +65,9 @@ class ConnectionPool extends EventEmitter {
         });
 
         connection.on('timedOut', 
-                this._handleConnectionTimeout.bind(this, connection));
+                this._handleRemoveConnection.bind(this, connection, 'timed out'));
+        connection.on('closed', 
+                this._handleRemoveConnection.bind(this, connection, 'closed'));
         connection.on('stateChanged', 
                 this._handleConnectionStateChanged.bind(this, connection));
         connection.on('sendResponse', 
@@ -76,7 +78,7 @@ class ConnectionPool extends EventEmitter {
                 this._handleCommandReceived.bind(this, connection));
     }
 
-    _handleConnectionTimeout(connection) {
+    _handleRemoveConnection(connection, reason) {
         // Splice out the connection
         var connectionRemoved = false;
         for (var i = 0; i < this.d_connectionQueue.length; i++) {

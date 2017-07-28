@@ -15,23 +15,31 @@ const ProtocolCommands = {
         CONTROL_REQ: {
             DID: 0x00,
             CID: 0x02,
-            clientFnName: 'sendControlReq'
+            clientFnName: 'sendControlReq',
+            returnType: 'uint8'
         },
         HBEAT: {
             DID: 0x00,
             CID: 0x03,
-            clientFnName: 'sendHbeat'
+            clientFnName: 'sendHbeat',
+            returnType: 'uint8'
         },
         VERS: {
             DID: 0x00,
             CID: 0x04,
             dataRequired: true,
-            clientFnName: 'getVers'
+            clientFnName: 'getVers',
+            returnType: 'uint16'
         },
         SHUTDOWN: {
             DID: 0x00,
             CID: 0x05,
             clientFnName: 'shutdown'
+        },
+        CLOSE: {
+            DID: 0x00,
+            CID: 0x06,
+            clientFnName: 'close'
         }
     },
     ROBOT: {
@@ -48,6 +56,7 @@ const ProtocolCommands = {
                 }
             ],
             clientFnName: 'getDigital',
+            returnType: 'uint8',
             providesCallback: true
         },
         GET_ANALOG: {
@@ -63,6 +72,7 @@ const ProtocolCommands = {
                 }
             ],
             clientFnName: 'getAnalog',
+            returnType: 'uint16',
             providesCallback: true
         },
         SET_DIGITAL: {
@@ -161,15 +171,22 @@ const ProtocolConstants = {
 // Generate a map
 var commandMap = {};
 var commandToDetails = {}; // e.g. SYS:CONN -> {DID, CID, type}
+var clientFnNameToDetails = {}; // e.g. sendConn -> {DID, CID, type}
 for (var deviceId in ProtocolCommands) {
     var deviceCommands = ProtocolCommands[deviceId];
     for (var command in deviceCommands) {
         var commandDetails = deviceCommands[command];
-
+        
         var commandDesc = deviceId + ':' + command;
         var commandKey = commandDetails.DID + ':' + commandDetails.CID;
+        
+        commandDetails.commandName = commandDesc;
+
         commandMap[commandKey] = commandDesc;
         commandToDetails[commandDesc] = commandDetails;
+        if (commandDetails.clientFnName) {
+            clientFnNameToDetails[commandDetails.clientFnName] = commandDetails;
+        }
     }
 }
 
@@ -186,6 +203,14 @@ function getCommandDetails(command) {
     return commandToDetails[command];
 }
 
+function getCommandDetailsFromFn(fnName) {
+    return clientFnNameToDetails[fnName];
+}
+
+function listClientFnNames() {
+    return Object.keys(clientFnNameToDetails);
+}
+
 module.exports = {
     Commands: ProtocolCommands,
     Responses: ProtocolResponses,
@@ -194,5 +219,7 @@ module.exports = {
 
     getCommandType: getCommandType,
     getCommandDetails: getCommandDetails,
-    getSysCommandBytes: getSysCommandBytes
+    getSysCommandBytes: getSysCommandBytes,
+    getCommandDetailsFromFn: getCommandDetailsFromFn,
+    listClientFnNames: listClientFnNames
 };

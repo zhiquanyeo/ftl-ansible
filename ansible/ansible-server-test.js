@@ -113,8 +113,16 @@ describe('Ansible Server', () => {
         var server = new AnsibleServer();
         var msgReceivedSpy = this.spy(server, '_onMessageReceived');
 
+        // Build a "real" packet so that the server doesn't choke
+        var testPacket = {
+            SEQ: 1,
+            DID: 0,
+            CID: 1
+        };
+        var testBuf = PacketBuilder.buildClientPacket(testPacket);
+        
         // Emit the event
-        mockSocket.emit('message', new Buffer(0), {
+        mockSocket.emit('message', testBuf, {
             address: 'localhost',
             port: 1
         });
