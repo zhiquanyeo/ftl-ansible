@@ -34,12 +34,12 @@ const ProtocolCommands = {
         SHUTDOWN: {
             DID: 0x00,
             CID: 0x05,
-            clientFnName: 'shutdown'
+            clientFnName: 'sendShutdown'
         },
         CLOSE: {
             DID: 0x00,
             CID: 0x06,
-            clientFnName: 'close'
+            clientFnName: 'sendClose'
         }
     },
     ROBOT: {

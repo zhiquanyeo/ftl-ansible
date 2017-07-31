@@ -25,6 +25,7 @@
     "sinon-test": "^2.0.0"
   },
   "dependencies": {
+    "command-line-args": "^4.0.6",
     "promise": "^8.0.0",
     "winston": "^2.3.1"
   }

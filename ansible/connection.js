@@ -107,6 +107,13 @@ class Connection extends EventEmitter {
         }
     }
 
+    shutdown() {
+        clearTimeout(this.d_hbeatTimeout);
+        this.d_hbeatTimeout = undefined;
+        this.d_rinfo = undefined;
+        this.d_clientId = undefined;
+    }
+
     // Private API
     _handlePreconnectState(packet) {
         var command = ProtocolCommands.getCommandType(packet.DID, packet.CID);
@@ -189,7 +196,7 @@ class Connection extends EventEmitter {
 
         switch(command) {
             case 'SYS:HBEAT': {
-                this._handleHBEAT();
+                this._handleHBEAT(packet);
                 return true;
             }
             case 'SYS:CLOSE': {
@@ -241,7 +248,7 @@ class Connection extends EventEmitter {
 
         switch(command) {
             case 'SYS:HBEAT': {
-                this._handleHBEAT();
+                this._handleHBEAT(packet);
                 return true;
             }
             case 'SYS:CLOSE': {
@@ -266,6 +273,7 @@ class Connection extends EventEmitter {
     }
 
     _handleClose(packet) {
+        console.log('Handling SYS:CLOSE from ', this.d_clientId);
         this.emit('closed');
     }
 }

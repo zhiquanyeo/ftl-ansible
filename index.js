@@ -3,7 +3,7 @@
  */
 
 const AnsibleServer = require('./ansible/ansible-server');
-const AnsibleClient = require(',.ansible-client');
+const AnsibleClient = require('./ansible/ansible-client');
 
 module.exports = {
     Server: AnsibleServer,

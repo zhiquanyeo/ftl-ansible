@@ -15,6 +15,7 @@ const EventEmitter = require('events');
 const Connection = require('./connection');
 const PacketParser = require('./protocol-packet/packet-parser');
 const PacketBuilder = require('./protocol-packet/packet-builder');
+const ProtocolCommands = require('./protocol-commands');
 
 function generateClientAddr(rinfo) {
     return rinfo.address + ':' + rinfo.port;
@@ -48,6 +49,7 @@ class ConnectionPool extends EventEmitter {
      * @private
      */
     _newConnection(rinfo) {
+        logger.info('Creating connection: ', generateClientAddr(rinfo));
         var connActive = false;
 
         if (this.d_connectionQueue.length === 0) {
@@ -79,6 +81,9 @@ class ConnectionPool extends EventEmitter {
     }
 
     _handleRemoveConnection(connection, reason) {
+        logger.info('Removing connection: ', connection.clientId, ' due to ', reason);
+        connection.removeAllListeners();
+        
         // Splice out the connection
         var connectionRemoved = false;
         for (var i = 0; i < this.d_connectionQueue.length; i++) {
@@ -93,6 +98,8 @@ class ConnectionPool extends EventEmitter {
             logger.warn('[FTL-ANS] Could not find connection ' + connection.clientId + ' for removal');
             return;
         }
+
+        connection.shutdown();
 
         // Inform the new first connection that they are active
         if (this.d_connectionQueue.length > 0) {
@@ -135,6 +142,16 @@ class ConnectionPool extends EventEmitter {
         var packetInfo = PacketParser.decodeClientPacket(msg);
         
         if (packetInfo.ok) {
+            var cmdType = ProtocolCommands.getCommandType(
+                                            packetInfo.packet.DID, 
+                                            packetInfo.packet.CID);
+            
+            // If these are system messages, pass them through
+            if (cmdType.indexOf('SYS:') === 0) {
+                this.d_connections[clientAddr].processMessage(packetInfo.packet);
+                return;
+            }
+        
             var activeConnection = this._activeConnection();
             if (activeConnection) {
                 activeConnection.processMessage(packetInfo.packet);

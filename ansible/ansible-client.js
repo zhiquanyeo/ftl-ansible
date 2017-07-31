@@ -22,10 +22,40 @@ const ConnectionState = {
 };
 
 const MISSED_HEARTBEATS_TILL_DISCONNECT = 5;
-const HEARTBEAT_INTERVAL = 200; // ms
+const HEARTBEAT_INTERVAL = 500; // ms
+
+function _makeMethods(clientObj) {
+    ProtocolCommands.listClientFnNames().forEach((fnName) => {
+        clientObj[fnName + 'P'] = function() {
+            return this._sendRequestP(fnName, Array.prototype.slice.call(arguments, 0))
+        };
+
+        clientObj[fnName] = function() {
+            var cmdInfo = ProtocolCommands.getCommandDetailsFromFn(fnName);
+            var callback = null;
+            if (cmdInfo.params && arguments.length > cmdInfo.params.length &&
+                typeof(arguments[cmdInfo.params.length]) === 'function') {
+                callback = arguments[cmdInfo.params.length];
+            }
+
+            this._sendRequestP(fnName, Array.prototype.slice.call(arguments, 0))
+            .then((result) => {
+                if (callback) {
+                    callback(null, result);
+                }
+            })
+            .catch((err) => {
+                callback(err);
+            });
+        }
+    });
+}
+
 class AnsibleClient extends EventEmitter {
     constructor(opts) {
         super();
+
+        _makeMethods(this);
 
         opts = opts || {};
         this.d_socket = this._createSocket();
@@ -197,7 +227,9 @@ class AnsibleClient extends EventEmitter {
                 timeoutToken: _requestTimeout
             };
             
-            this.d_outstandingRequests[seqNum] = pendingRequest;
+            if (reqType !== 'sendClose') {
+                this.d_outstandingRequests[seqNum] = pendingRequest;
+            }
 
             this.d_socket.send(pktBuf, 0, pktBuf.length, 
                     this.d_remotePort, this.d_remoteAddr,
@@ -207,6 +239,11 @@ class AnsibleClient extends EventEmitter {
                             delete this.d_outstandingRequests[seqNum];
                             reject(err);
                             logger.error('[FTL-ANS-CLI] Error while sending: ', err);
+                        }
+                        else {
+                            if (reqType === 'sendClose') {
+                                resolve();
+                            }
                         }
                     });
         });
@@ -235,15 +272,20 @@ class AnsibleClient extends EventEmitter {
             })
             .catch((err) => {
                 this.d_missedHeartbeats++;
+                console.log('Missed Heartbeats: ', this.d_missedHeartbeats);
                 
                 // If we are over the missed hbeat threshold
                 // disconnect and restart the socket
                 if (this.d_missedHeartbeats >= this.d_missedHbeatTillDisconnect) {
                     clearInterval(this.d_heartbeatToken);
+                    this.d_missedHeartbeats = 0;
                     this.d_connected = false;
                     var oldState = this.d_state;
                     this.d_state = ConnectionState.PRE_CONNECT;
-                    this.emit('disconnected');
+                    this.emit('disconnected', {
+                        code: 1,
+                        reason: 'MISSED_HBEAT'
+                    });
                     this.emit('stateChanged', {
                         oldState: oldState,
                         newState: this.d_state
@@ -293,57 +335,68 @@ class AnsibleClient extends EventEmitter {
         })
         .catch((err) => {
             logger.error('[FTL-ANS-CLI] Error during connection: ', err);
+            throw err;
         });
     }
 
-    close() {
+    closeConnection() {
         // Send a final CLOSE request to the server
-        this._sendRequestP('sendClose');
+        // Since we don't get a reply, the sendRequestP will resolve right away
+        this._sendRequestP('sendClose')
+        .then(() => {
+            this.d_missedHeartbeats = 0;
         
-        if (this.d_heartbeatToken) {
-            clearInterval(this.d_heartbeatToken);
-        }
+            if (this.d_heartbeatToken) {
+                clearInterval(this.d_heartbeatToken);
+            }
 
-        for (var k in this.d_outstandingRequests) {
-            clearTimeout(this.d_outstandingRequests[k].timeoutToken);
-        }
+            for (var k in this.d_outstandingRequests) {
+                clearTimeout(this.d_outstandingRequests[k].timeoutToken);
+            }
 
-        this.d_connected = false;
-        var oldState = this.d_state;
-        this.d_state = ConnectionState.PRE_CONNECT;
-        this.emit('stateChanged', {
-            oldState: oldState,
-            newState: this.d_state
+            this.d_connected = false;
+            var oldState = this.d_state;
+            this.d_state = ConnectionState.PRE_CONNECT;
+
+            this.emit('disconnected', {
+                code: 0,
+                reason: 'SOCKET_CLOSE'
+            });
+            this.emit('stateChanged', {
+                oldState: oldState,
+                newState: this.d_state
+            });
+
+            this.d_socket.removeAllListeners();
+            this.d_socket = this._createSocket();
         });
-
-        this.d_socket.removeAllListeners();
-        this.d_socket = this._createSocket();
+        // TODO should we handle error conditions? 
     }
 };
 
-ProtocolCommands.listClientFnNames().forEach((fnName) => {
-    AnsibleClient.prototype[fnName + 'P'] = function() {
-        return this._sendRequestP(fnName, Array.prototype.slice.call(arguments, 0))
-    };
+// ProtocolCommands.listClientFnNames().forEach((fnName) => {
+//     AnsibleClient.prototype[fnName + 'P'] = function() {
+//         return this._sendRequestP(fnName, Array.prototype.slice.call(arguments, 0))
+//     };
 
-    AnsibleClient.prototype[fnName] = function() {
-        var cmdInfo = ProtocolCommands.getCommandDetailsFromFn(fnName);
-        var callback = null;
-        if (cmdInfo.params && arguments.length > cmdInfo.params.length &&
-            typeof(arguments[cmdInfo.params.length]) === 'function') {
-            callback = arguments[cmdInfo.params.length];
-        }
+//     AnsibleClient.prototype[fnName] = function() {
+//         var cmdInfo = ProtocolCommands.getCommandDetailsFromFn(fnName);
+//         var callback = null;
+//         if (cmdInfo.params && arguments.length > cmdInfo.params.length &&
+//             typeof(arguments[cmdInfo.params.length]) === 'function') {
+//             callback = arguments[cmdInfo.params.length];
+//         }
 
-        this._sendRequestP(fnName, Array.prototype.slice.call(arguments, 0))
-        .then((result) => {
-            if (callback) {
-                callback(null, result);
-            }
-        })
-        .catch((err) => {
-            callback(err);
-        });
-    }
-});
+//         this._sendRequestP(fnName, Array.prototype.slice.call(arguments, 0))
+//         .then((result) => {
+//             if (callback) {
+//                 callback(null, result);
+//             }
+//         })
+//         .catch((err) => {
+//             callback(err);
+//         });
+//     }
+// });
 
 module.exports = AnsibleClient;
