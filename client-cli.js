@@ -48,6 +48,10 @@ client.connect()
         console.log('State changed from ', stateInfo.oldState, ' to ', stateInfo.newState);
     });
 
+    client.on('asyncEvent', (evt) => {
+        console.log('Async Event Received: ', evt);
+    })
+
     _configureRepl();
 })
 .catch((err) => {

@@ -133,7 +133,18 @@ class AnsibleClient extends EventEmitter {
         }
         else {
             // TODO Handle the async messages
-            
+            var eventType = ProtocolCommands.getAsyncEventType(packetInfo.packet.ID_CODE);
+            if (!eventType) {
+                logger.warn('[FTL-ANS-CLI] Invalid Async Event ID_CODE: ', packetInfo.packet.ID_CODE);
+                return;
+            }
+
+            // TODO We could do something smart with parsing values here, but
+            // for now, just return the raw buffer
+            this.emit('asyncEvent', {
+                type: eventType,
+                data: packetInfo.packet.DATA
+            });
         }
     }
 

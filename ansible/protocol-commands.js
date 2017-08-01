@@ -207,6 +207,30 @@ for (var deviceId in ProtocolCommands) {
     }
 }
 
+// Generate the async map
+var asyncCommandMap = {}
+var asyncCommandToDetails = {}; // e.g. ASYNC:POWER_NOTIFICATION -> {ID_CODE, etc}
+for (var asyncCategory in AsyncEvents) {
+    var asyncCommands = AsyncEvents[asyncCategory];
+    for (var asyncCommand in asyncCommands) {
+        var asyncCommandDetails = asyncCommands[asyncCommand];
+        var asyncCommandDesc = asyncCategory + ':' + asyncCommand;
+
+        asyncCommandDetails.commandName = asyncCommandDesc;
+
+        asyncCommandMap[asyncCommandDetails.ID_CODE] = asyncCommandDesc;
+        asyncCommandToDetails[commandDesc] = commandDetails;
+    }
+}
+
+function getAsyncEventType(ID_CODE) {
+    return asyncCommandMap[ID_CODE];
+}
+
+function getAsyncEventDetails(evtName) {
+    return asyncCommandToDetails[evtName];
+}
+
 function getSysCommandBytes(cmd) {
     return ProtocolCommands.SYS[cmd];
 }
@@ -238,5 +262,8 @@ module.exports = {
     getCommandDetails: getCommandDetails,
     getSysCommandBytes: getSysCommandBytes,
     getCommandDetailsFromFn: getCommandDetailsFromFn,
-    listClientFnNames: listClientFnNames
+    listClientFnNames: listClientFnNames,
+
+    getAsyncEventType: getAsyncEventType,
+    getAsyncEventDetails: getAsyncEventDetails
 };
