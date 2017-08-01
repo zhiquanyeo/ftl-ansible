@@ -31,14 +31,9 @@ const ProtocolCommands = {
             clientFnName: 'getVers',
             returnType: 'uint16'
         },
-        SHUTDOWN: {
-            DID: 0x00,
-            CID: 0x05,
-            clientFnName: 'sendShutdown'
-        },
         CLOSE: {
             DID: 0x00,
-            CID: 0x06,
+            CID: 0x05,
             clientFnName: 'sendClose'
         }
     },
@@ -151,6 +146,28 @@ const ProtocolCommands = {
             ],
             clientFnName: 'setMotor'
         },
+    }
+};
+
+const AsyncEvents = {
+    ASYNC: {
+        POWER_NOTIFICATION: {
+            ID_CODE: 0x01,
+            payload: [
+                {
+                    name: 'battV',
+                    type: 'uint8',
+                    offset: 0,
+                    length: 1
+                },
+                {
+                    name: 'battVdec',
+                    type: 'uint8',
+                    offset: 0,
+                    length: 1
+                }
+            ]
+        }
     }
 };
 

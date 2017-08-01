@@ -1,20 +1,35 @@
 const repl = require('repl');
-const AnsibleClient = require('./ansible/ansible-client');
+const AnsibleClientUDP = require('./ansible/ansible-client');
+const AnsibleClientTCP = require('./ansible/ansible-client-tcp');
 const commandLineArgs = require('command-line-args');
 
 const optionDefs = [
-	{ name: 'port', alias: 'p', type: Number, defaultOption: true }
+    { name: 'port', alias: 'p', type: Number, defaultOption: true },
+    { name: 'type', alias: 't', type: String }
 ];
 
 const DEFAULT_PORT = 41236;
+const DEFAULT_TYPE = 'UDP';
 
 // Initial Setup
 const opts = commandLineArgs(optionDefs, { partial: true });
 
 const usePort = opts.port !== undefined ? opts.port : DEFAULT_PORT;
+const clientType = opts.type || DEFAULT_TYPE;
 
-console.log('Initializing connection via port ', usePort);
-var client = new AnsibleClient({ port: usePort });
+if (clientType !== 'UDP' && clientType !== 'TCP') {
+    clientType = DEFAULT_TYPE;
+}
+
+var client;
+if (clientType === 'UDP') {
+    console.log('Creating UDP Client');
+    client = new AnsibleClientUDP({ port: usePort });
+}
+else {
+    console.log('Creating TCP Client');
+    client = new AnsibleClientTCP({ port: usePort });
+}
 
 var startTime, endTime;
 client.connect()

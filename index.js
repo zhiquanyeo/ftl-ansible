@@ -2,10 +2,14 @@
  * Map to the various components in the ftl-ansible library
  */
 
-const AnsibleServer = require('./ansible/ansible-server');
-const AnsibleClient = require('./ansible/ansible-client');
+const AnsibleServerUDP = require('./ansible/ansible-server');
+const AnsibleClientUDP = require('./ansible/ansible-client');
+const AnsibleServerTCP = require('./ansible/ansible-server-tcp');
+const AnsibleClientTCP = require('./ansible/ansible-client-tcp');
 
 module.exports = {
-    Server: AnsibleServer,
-    Client: AnsibleClient
+    UDPServer: AnsibleServerUDP,
+    UDPClient: AnsibleClientUDP,
+    TCPServer: AnsibleServerTCP,
+    TCPClient: AnsibleClientTCP
 };

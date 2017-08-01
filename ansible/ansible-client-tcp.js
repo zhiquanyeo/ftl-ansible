@@ -1,9 +1,5 @@
-/**
- * AnsibleClient
- */
-
 const logger = require('winston');
-const dgram = require('dgram');
+const net = require('net');
 const EventEmitter = require('events');
 const Promise = require('promise');
 const ProtocolCommands = require('./protocol-commands');
@@ -14,15 +10,14 @@ const PacketParser = require('./protocol-packet/packet-parser');
 const DEFAULT_ADDR = 'localhost';
 const DEFAULT_PORT = 41234;
 
-const ConnectionState = {
-    PRE_CONNECT : 'PRE_CONNECT',
-    CONNECTED   : 'CONNECTED',
-    ACTIVE      : 'ACTIVE',
-    QUEUED      : 'QUEUED'
-};
-
 const MISSED_HEARTBEATS_TILL_DISCONNECT = 5;
-const HEARTBEAT_INTERVAL = 500; // ms
+const HEARTBEAT_INTERVAL = 200; // ms
+
+const ConnectionState = {
+    NOT_CONNECTED : 'NOT_CONNECTED',
+    ACTIVE        : 'ACTIVE',
+    QUEUED        : 'QUEUED'
+};
 
 function _makeMethods(clientObj) {
     ProtocolCommands.listClientFnNames().forEach((fnName) => {
@@ -58,8 +53,6 @@ class AnsibleClient extends EventEmitter {
         _makeMethods(this);
 
         opts = opts || {};
-        this.d_socket = this._createSocket();
-
         this.d_remoteAddr = opts.address || DEFAULT_ADDR;
         this.d_remotePort = opts.port !== undefined ?
                             opts.port : DEFAULT_PORT;
@@ -67,38 +60,21 @@ class AnsibleClient extends EventEmitter {
         this.d_seq = 1;
         this.d_outstandingRequests = {};
 
-        this.d_connected = false;
-        this.d_state = ConnectionState.PRE_CONNECT;
-
+        this.d_state = ConnectionState.NOT_CONNECTED;
         this.d_packetTimeout = opts.packetTimeout || 2000;
 
         this.d_heartbeatToken = null;
         this.d_missedHeartbeats = 0;
 
-        this.d_heartbeatInterval = opts.heartbeatInterval ||
-                                   HEARTBEAT_INTERVAL;
-        this.d_missedHbeatTillDisconnect = opts.missedHbeatDisconnect ||
-                                           MISSED_HEARTBEATS_TILL_DISCONNECT;
+        this.d_heartbeatInterval = opts.heartbeatInterval || HEARTBEAT_INTERVAL;
+        this.d_missedHbeatTillDisconnect = opts.missedHbeatDisconnect || 
+                                            MISSED_HEARTBEATS_TILL_DISCONNECT;
+
+        this.d_connected = false;
+        this.d_socket = null;
     }
 
-    /** Private **/
-    _createSocket() {
-        const socket = dgram.createSocket('udp4');
-
-        socket.on('error', (err) => {
-            logger.error(`[FTL-ANS-CLI] Socket Error:\n${err.stack}`);
-            this.emit('error', err);
-        });
-
-        socket.on('message', (msg, rinfo) => {
-            this._onMessageReceived(msg, rinfo);
-        });
-
-        return socket;
-    }
-
-    _onMessageReceived(msg, rinfo) {
-        // Parse into a packet object
+    _onMessageReceived(msg) {
         var packetType = PacketParser.checkServerPacketType(msg);
         var packetInfo;
         if (packetType === 'UNKNOWN') {
@@ -127,7 +103,8 @@ class AnsibleClient extends EventEmitter {
 
             var commandInfo = ProtocolCommands.getCommandDetails(pendingRequest.cmdName);
             if (!commandInfo) {
-                logger.warn('[FTL-ANS-CLI] Invalid command type');
+                logger.warn('[FTL-ANS-CLI] Invalid command type: ', pendingRequest.cmdName);
+                // TODO Wipe this from pending request list?
                 return;
             }
 
@@ -154,27 +131,39 @@ class AnsibleClient extends EventEmitter {
             pendingRequest.resolve(returnVal);
             delete this.d_outstandingRequests[packetInfo.packet.SEQ];
         }
+        else {
+            // TODO Handle the async messages
+            
+        }
     }
 
     _sendRequestP(reqType, argArray) {
         return new Promise((resolve, reject) => {
-            var commandDetails = ProtocolCommands.getCommandDetailsFromFn(reqType);
-            if (!commandDetails) {
-                reject(new Error('Invalid Request: ' + reqType));
+            if (!this.d_socket) {
+                reject(new Error('Not connected'));
                 return;
             }
 
-            if (commandDetails.params && 
-                (!argArray || 
+            var commandDetails = ProtocolCommands.getCommandDetailsFromFn(reqType);
+            if (!commandDetails) {
+                reject(new Error('Invalid request: ' + reqType));
+                return;
+            }
+
+            if (commandDetails.commandName.indexOf('SYS:') !== 0 && this.d_state !== ConnectionState.ACTIVE) {
+                reject(new Error('Invalid Client State: ' + this.d_state));
+                return;
+            }
+
+            if (commandDetails.params &&
+                (!argArray ||
                  argArray.length < commandDetails.params.length)) {
                 reject(new Error('Too few arguments for ' + reqType));
                 return;
             }
 
-            // set timeout 
-            // TODO maybe only set this if we need to ack?
             var _requestTimeout = setTimeout(() => {
-                reject(new Error('Request Timed Out'));
+                reject(new Error('Request timed out'));
             }, this.d_packetTimeout);
 
             var dataBuf = null;
@@ -231,22 +220,13 @@ class AnsibleClient extends EventEmitter {
                 this.d_outstandingRequests[seqNum] = pendingRequest;
             }
 
-            this.d_socket.send(pktBuf, 0, pktBuf.length, 
-                    this.d_remotePort, this.d_remoteAddr,
-                    (err) => {
-                        if (err) {
-                            // If there was an error, remove this from outstanding requests
-                            delete this.d_outstandingRequests[seqNum];
-                            reject(err);
-                            logger.error('[FTL-ANS-CLI] Error while sending: ', err);
-                        }
-                        else {
-                            if (reqType === 'sendClose') {
-                                resolve();
-                            }
-                        }
-                    });
-            
+            this.d_socket.write(pktBuf, () => {
+                if (reqType === 'sendClose') {
+                    resolve();
+                }
+            });
+
+            // Also reset the sequence number if necessary
             if (this.d_seq > 0xFF) {
                 this.d_seq = 1;
             }
@@ -255,6 +235,7 @@ class AnsibleClient extends EventEmitter {
 
     _setupHeartbeat() {
         this.d_heartbeatToken = setInterval(() => {
+            var seq = this.d_seq;
             this._sendRequestP('sendHbeat')
             .then((connState) => {
                 this.d_missedHeartbeats = 0;
@@ -276,15 +257,14 @@ class AnsibleClient extends EventEmitter {
             })
             .catch((err) => {
                 this.d_missedHeartbeats++;
-                
-                // If we are over the missed hbeat threshold
-                // disconnect and restart the socket
+                console.log('Missed Packet #', seq);
+
                 if (this.d_missedHeartbeats >= this.d_missedHbeatTillDisconnect) {
                     clearInterval(this.d_heartbeatToken);
                     this.d_missedHeartbeats = 0;
                     this.d_connected = false;
                     var oldState = this.d_state;
-                    this.d_state = ConnectionState.PRE_CONNECT;
+                    this.d_state = ConnectionState.NOT_CONNECTED;
                     this.emit('disconnected', {
                         code: 1,
                         reason: 'MISSED_HBEAT'
@@ -295,9 +275,11 @@ class AnsibleClient extends EventEmitter {
                     });
 
                     this.d_socket.removeAllListeners();
-                    this.d_socket = this._createSocket();
+                    this.d_socket.end();
+                    this.d_socket.destroy();
+                    this.d_socket = null;
                 }
-            });
+            })
         }, this.d_heartbeatInterval);
     }
 
@@ -306,49 +288,41 @@ class AnsibleClient extends EventEmitter {
             return Promise.resolve();
         }
 
-        return this._sendRequestP('sendConn')
-        .then(() => {
-            var oldState = this.d_state;
-            this.d_state = ConnectionState.CONNECTED;
-            this.emit('stateChanged', {
-                oldState: oldState,
-                newState: this.d_state
+        return new Promise((resolve) => {
+            this.d_socket = net.createConnection(this.d_remotePort, this.d_remoteAddr, () => {
+                this.d_connected = true;
+                resolve();
+            });
+            this.d_socket.on('error', (err) => {
+                logger.error(`[FTL-ANS-CLI] Socket Error:\n${err.stack}`);
+                this.emit('error', err);
             });
 
-            return this._sendRequestP('sendControlReq');
-        })
-        .then((status) => {
-            var oldState = this.d_state;
-            if (status === ProtocolCommands.Responses.ConnectionActiveState.ACTIVE) {
-                this.d_state = ConnectionState.ACTIVE;
-            }
-            else {
-                this.d_state = ConnectionState.QUEUED;
-            }
+            this.d_socket.on('close', (wasError) => {
+                var errcode = 0;
+                var reason = 'SOCKET_CLOSED';
+                if (wasError) {
+                    errcode = 1;
+                    reason = 'SOCKET_ERROR'
+                }
 
-            this.d_connected = true;
-            this.emit('stateChanged', {
-                oldState: oldState,
-                newState: this.d_state
+                this.emit('disconnected', {
+                    code: errcode,
+                    reason: reason
+                });
             });
+
+            this.d_socket.on('data', this._onMessageReceived.bind(this));
 
             this._setupHeartbeat();
-
-            return this.d_state;
-        })
-        .catch((err) => {
-            logger.error('[FTL-ANS-CLI] Error during connection: ', err);
-            throw err;
         });
     }
 
     closeConnection() {
-        // Send a final CLOSE request to the server
-        // Since we don't get a reply, the sendRequestP will resolve right away
         this._sendRequestP('sendClose')
         .then(() => {
             this.d_missedHeartbeats = 0;
-        
+            
             if (this.d_heartbeatToken) {
                 clearInterval(this.d_heartbeatToken);
             }
@@ -358,48 +332,15 @@ class AnsibleClient extends EventEmitter {
             }
 
             this.d_connected = false;
-            var oldState = this.d_state;
-            this.d_state = ConnectionState.PRE_CONNECT;
-
             this.emit('disconnected', {
                 code: 0,
-                reason: 'SOCKET_CLOSE'
-            });
-            this.emit('stateChanged', {
-                oldState: oldState,
-                newState: this.d_state
+                reason: 'SOCKET_CLOSED'
             });
 
-            this.d_socket.removeAllListeners();
-            this.d_socket = this._createSocket();
-        });
-        // TODO should we handle error conditions? 
+            this.d_socket.end();
+            this.d_socket = null;
+        })
     }
 };
-
-// ProtocolCommands.listClientFnNames().forEach((fnName) => {
-//     AnsibleClient.prototype[fnName + 'P'] = function() {
-//         return this._sendRequestP(fnName, Array.prototype.slice.call(arguments, 0))
-//     };
-
-//     AnsibleClient.prototype[fnName] = function() {
-//         var cmdInfo = ProtocolCommands.getCommandDetailsFromFn(fnName);
-//         var callback = null;
-//         if (cmdInfo.params && arguments.length > cmdInfo.params.length &&
-//             typeof(arguments[cmdInfo.params.length]) === 'function') {
-//             callback = arguments[cmdInfo.params.length];
-//         }
-
-//         this._sendRequestP(fnName, Array.prototype.slice.call(arguments, 0))
-//         .then((result) => {
-//             if (callback) {
-//                 callback(null, result);
-//             }
-//         })
-//         .catch((err) => {
-//             callback(err);
-//         });
-//     }
-// });
 
 module.exports = AnsibleClient;
