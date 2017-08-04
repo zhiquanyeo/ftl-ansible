@@ -84,7 +84,7 @@ class AnsibleServer extends EventEmitter {
             this.emit('dataRequired', {
                 command: dataRequiredEvt.command,
                 params: _generateParamsList(
-                            ProtocolCommands.getCommandDetails(dataRequiredEvt.dataRequired),
+                            ProtocolCommands.getCommandDetails(dataRequiredEvt.command),
                             dataRequiredEvt.packet.DATA),
                 respond: function (data) {
                     clearTimeout(timeoutResponder);

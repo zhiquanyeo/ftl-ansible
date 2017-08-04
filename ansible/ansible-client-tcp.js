@@ -108,6 +108,14 @@ class AnsibleClient extends EventEmitter {
                 return;
             }
 
+            // If the MRSP is NOT 0, we should reject
+            if (packetInfo.packet.MRSP !== ProtocolConstants.OK) {
+                clearTimeout(pendingRequest.timeoutToken);
+                pendingRequest.reject(new Error("Problem with request. Error Code: " + packetInfo.packet.MRSP));
+                delete this.d_outstandingRequests[packetInfo.packet.SEQ];
+                return;
+            }
+
             // Try to parse data from the DATA buffer
             var returnVal = null;
             if (commandInfo.returnType) {
@@ -224,6 +232,7 @@ class AnsibleClient extends EventEmitter {
             var pendingRequest = {
                 cmdName: commandDetails.commandName,
                 resolve: resolve,
+                reject: reject,
                 timeoutToken: _requestTimeout
             };
             
