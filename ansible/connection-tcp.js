@@ -160,7 +160,25 @@ class Connection extends EventEmitter {
                     packet: packet,
                     command: cmdType,
                     respond: function (mrsp, data) {
-                        var pkt = _generateResponsePacket(packet.SEQ, mrsp, data);
+                        // try to coerce the return type into a buffer
+                        var dataBuf = null;
+                        if (commandDetails.returnType) {
+                            switch (commandDetails.returnType) {
+                                case 'uint8':
+                                case 'int8':
+                                    dataBuf = Buffer.from([data]);
+                                    break;
+                                case 'uint16':
+                                    dataBuf = Buffer.alloc(2);
+                                    dataBuf.writeUInt16BE(data);
+                                    break;
+                                case 'int16':
+                                    dataBuf = Buffer.alloc(2);
+                                    dataBuf.writeInt16BE(data);
+                                    break;
+                            }
+                        }
+                        var pkt = _generateResponsePacket(packet.SEQ, mrsp, dataBuf);
                         var buf = PacketBuilder.buildServerResponsePacket(pkt);
                         this.d_socket.write(buf, () => {
                             // Handle data written
